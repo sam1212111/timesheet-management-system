@@ -24,7 +24,7 @@ jobs:
 
       - name: Build jar
         run: |
-          cd eureka-server
+          cd EurekaServer
           mvn clean package -DskipTests
 
       - name: Log in to Docker Hub
@@ -36,7 +36,7 @@ jobs:
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./eureka-server
+          context: ./EurekaServer
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/eureka-server:latest
