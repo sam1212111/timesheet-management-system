@@ -6,6 +6,10 @@ spring:
     name: config-server
   profiles:
     active: git
+  security:
+    user:
+      name: config-admin
+      password: config@123
   cloud:
     config:
       server:
@@ -15,7 +19,6 @@ spring:
           username: ${CONFIG_REPO_USERNAME}
           password: ${CONFIG_REPO_TOKEN}
           clone-on-start: true
-          search-paths: configs
 
 eureka:
   client:
