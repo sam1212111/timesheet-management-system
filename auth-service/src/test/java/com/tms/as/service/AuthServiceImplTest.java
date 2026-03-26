@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -42,6 +43,9 @@ class AuthServiceImplTest {
 
     @Mock
     private IdGeneratorUtil idGeneratorUtil;
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -99,6 +103,7 @@ class AuthServiceImplTest {
             verify(userRepository).existsByEmail("john@example.com");
             verify(userRepository).existsByEmployeeCode("EMP-001");
             verify(userRepository).save(any(User.class));
+            verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any());
         }
 
         @Test

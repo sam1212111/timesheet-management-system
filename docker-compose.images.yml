@@ -58,6 +58,9 @@ services:
       EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

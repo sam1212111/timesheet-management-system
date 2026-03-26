@@ -5,6 +5,8 @@ import com.tms.admin.dto.TimesheetSubmittedEvent;
 import com.tms.admin.entity.ApprovalTask;
 import com.tms.admin.entity.TargetType;
 import com.tms.admin.repository.ApprovalTaskRepository;
+import com.tms.admin.service.WelcomeEmailService;
+import com.tms.common.event.UserRegisteredEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -18,9 +20,12 @@ public class EventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(EventConsumer.class);
     private final ApprovalTaskRepository taskRepository;
+    private final WelcomeEmailService welcomeEmailService;
 
-    public EventConsumer(ApprovalTaskRepository taskRepository) {
+    public EventConsumer(ApprovalTaskRepository taskRepository,
+                         WelcomeEmailService welcomeEmailService) {
         this.taskRepository = taskRepository;
+        this.welcomeEmailService = welcomeEmailService;
     }
 
     @RabbitListener(queues = "admin.timesheet.queue")
@@ -56,6 +61,16 @@ public class EventConsumer {
             );
             taskRepository.save(task);
             log.info("Approval task created for leave request: {}", event.getRequestId());
+        }
+    }
+
+    @RabbitListener(queues = "notification.user.registered.queue")
+    public void handleUserRegistered(UserRegisteredEvent event) {
+        log.info("Received UserRegisteredEvent for email: {}", event.getEmail());
+        try {
+            welcomeEmailService.sendWelcomeEmail(event);
+        } catch (Exception ex) {
+            log.error("Failed to send welcome email to {}", event.getEmail(), ex);
         }
     }
 }

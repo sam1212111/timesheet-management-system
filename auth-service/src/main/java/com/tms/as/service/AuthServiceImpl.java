@@ -1,10 +1,12 @@
 package com.tms.as.service;
 
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.tms.as.config.RabbitMQConfig;
 import com.tms.as.dto.AdminUpdateUserRequest;
 import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
@@ -14,6 +16,7 @@ import com.tms.as.dto.UserResponse;
 import com.tms.as.entity.Role;
 import com.tms.as.entity.Status;
 import com.tms.as.entity.User;
+import com.tms.common.event.UserRegisteredEvent;
 import com.tms.as.repository.UserRepository;
 import com.tms.common.exception.ResourceAlreadyExistsException;
 import com.tms.common.exception.ResourceNotFoundException;
@@ -28,15 +31,18 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final IdGeneratorUtil idGeneratorUtil;
+    private final RabbitTemplate rabbitTemplate;
 
     public AuthServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            JwtUtil jwtUtil,
-                           IdGeneratorUtil idGeneratorUtil) {
+                           IdGeneratorUtil idGeneratorUtil,
+                           RabbitTemplate rabbitTemplate) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.idGeneratorUtil = idGeneratorUtil;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -60,6 +66,11 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus(Status.ACTIVE);
 
         User savedUser = userRepository.save(user);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                RabbitMQConfig.USER_REGISTERED_ROUTING_KEY,
+                new UserRegisteredEvent(savedUser.getId(), savedUser.getFullName(), savedUser.getEmail())
+        );
 
         return mapToUserResponse(savedUser);
     }

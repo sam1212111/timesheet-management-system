@@ -26,6 +26,11 @@ public class RabbitMQConfig {
         return new TopicExchange("admin.exchange");
     }
 
+    @Bean
+    public TopicExchange notificationExchange() {
+        return new TopicExchange("notification.exchange");
+    }
+
     // Queues
     @Bean
     public Queue adminTimesheetQueue() {
@@ -35,6 +40,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue adminLeaveQueue() {
         return new Queue("admin.leave.queue");
+    }
+
+    @Bean
+    public Queue userRegisteredQueue() {
+        return new Queue("notification.user.registered.queue");
     }
 
     // Bindings
@@ -50,6 +60,13 @@ public class RabbitMQConfig {
             @org.springframework.beans.factory.annotation.Qualifier("adminLeaveQueue") Queue adminLeaveQueue, 
             @org.springframework.beans.factory.annotation.Qualifier("leaveExchange") TopicExchange leaveExchange) {
         return BindingBuilder.bind(adminLeaveQueue).to(leaveExchange).with("leave.requested");
+    }
+
+    @Bean
+    public Binding bindingUserRegisteredToNotification(
+            @org.springframework.beans.factory.annotation.Qualifier("userRegisteredQueue") Queue userRegisteredQueue,
+            @org.springframework.beans.factory.annotation.Qualifier("notificationExchange") TopicExchange notificationExchange) {
+        return BindingBuilder.bind(userRegisteredQueue).to(notificationExchange).with("user.registered");
     }
 
     // Converters
