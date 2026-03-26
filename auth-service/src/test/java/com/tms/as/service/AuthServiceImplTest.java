@@ -25,8 +25,9 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,7 +104,7 @@ class AuthServiceImplTest {
             verify(userRepository).existsByEmail("john@example.com");
             verify(userRepository).existsByEmployeeCode("EMP-001");
             verify(userRepository).save(any(User.class));
-            verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any());
+            verify(rabbitTemplate).convertAndSend(anyString(), anyString(), isA(Object.class));
         }
 
         @Test

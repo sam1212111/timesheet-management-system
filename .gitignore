@@ -13,6 +13,7 @@ node_modules/
 
 # Env
 .env
+Config-Server/k8s/secret.yml
 
 # Maven
 pom.xml.tag
