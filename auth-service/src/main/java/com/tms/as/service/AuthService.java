@@ -13,4 +13,8 @@ public interface AuthService {
     UserResponse updateProfile(String id, UpdateProfileRequest request, String loggedInEmail);
 
     UserResponse adminUpdateUser(String id, AdminUpdateUserRequest request);
+
+    UserResponse assignManager(String id, String managerId);
+    
+    String getManagerForEmployee(String employeeId);
 }

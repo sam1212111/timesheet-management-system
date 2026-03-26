@@ -1,6 +1,7 @@
 package com.tms.as.controller;
 
 import com.tms.as.dto.AdminUpdateUserRequest;
+import com.tms.as.dto.AssignManagerRequest;
 import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
 import com.tms.as.dto.RegisterRequest;
@@ -61,5 +62,20 @@ public class AuthController {
     public ResponseEntity<UserResponse> adminUpdateUser(@PathVariable String id,
                                                          @Valid @RequestBody AdminUpdateUserRequest request) {
         return ResponseEntity.ok(authService.adminUpdateUser(id, request));
+    }
+
+    @PutMapping("/admin/users/{id}/manager")
+    @Operation(summary = "Assign manager to a user", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> assignManager(@PathVariable String id,
+                                                      @Valid @RequestBody AssignManagerRequest request) {
+        return ResponseEntity.ok(authService.assignManager(id, request.getManagerId()));
+    }
+    
+    @GetMapping("/users/{employeeId}/manager")
+    @Operation(summary = "Get manager ID for employee",
+               security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<String> getManagerForEmployee(@PathVariable String employeeId) {
+        return ResponseEntity.ok(authService.getManagerForEmployee(employeeId));
     }
 }

@@ -2,7 +2,10 @@ spring:
   application:
     name: auth-service
   config:
-    import: optional:configserver:http://config-admin:config%40123@localhost:7777
+    import: optional:configserver:http://${app.config-server.username}:${app.config-server.password}@${app.config-server.host}:${app.config-server.port}
+
+server:
+  forward-headers-strategy: framework
   cache:
     type: caffeine
     caffeine:
@@ -11,20 +14,25 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL}
   instance:
     prefer-ip-address: true
 
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /api/v1/auth/api-docs
   swagger-ui:
     path: /swagger-ui.html
 
 app:
+  config-server:
+    host: ${CONFIG_SERVER_HOST}
+    port: ${CONFIG_SERVER_PORT}
+    username: ${CONFIG_SERVER_USERNAME}
+    password: ${CONFIG_SERVER_PASSWORD_ENCODED}
   jwt:
-    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-    expiration-ms: 86400000
+    secret: ${APP_JWT_SECRET}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS}
 
 logging:
   level:

@@ -185,4 +185,35 @@ public class AuthServiceImpl implements AuthService {
 
         return mapToUserResponse(savedUser);
     }
+
+    @Override
+    public UserResponse assignManager(String id, String managerId) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+
+        if (user.getId().equals(manager.getId())) {
+            throw new UnauthorizedException("User cannot be assigned as their own manager");
+        }
+
+        if (manager.getRole() != Role.MANAGER && manager.getRole() != Role.ADMIN) {
+            throw new UnauthorizedException("Assigned manager must have MANAGER or ADMIN role");
+        }
+
+        user.setManagerId(manager.getId());
+
+        User savedUser = userRepository.save(user);
+
+        return mapToUserResponse(savedUser);
+    }
+    
+    @Override
+    public String getManagerForEmployee(String employeeId) {
+        User user = userRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+        return user.getManagerId();
+    }
 }

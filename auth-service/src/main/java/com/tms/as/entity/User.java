@@ -39,6 +39,9 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @Column(name = "manager_id", length = 15)
+    private String managerId;
 
     @PrePersist
     protected void onCreate() {
@@ -113,5 +116,13 @@ public class User {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    
+    public String getManagerId() {	
+        return managerId;
+    }
+
+    public void setManagerId(String managerId) {
+        this.managerId = managerId;
     }
 }

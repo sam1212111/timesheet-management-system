@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: leave-service
+  config:
+    import: optional:configserver:http://${app.config-server.username}:${app.config-server.password}@${app.config-server.host}:${app.config-server.port}
+
+server:
+  forward-headers-strategy: framework
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=5m
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  api-docs:
+    path: /api/v1/leave/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  config-server:
+    host: ${CONFIG_SERVER_HOST}
+    port: ${CONFIG_SERVER_PORT}
+    username: ${CONFIG_SERVER_USERNAME}
+    password: ${CONFIG_SERVER_PASSWORD_ENCODED}
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS}
+
+logging:
+  level:
+    com.tms.ls: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
