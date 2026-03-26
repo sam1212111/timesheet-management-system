@@ -1,94 +1,65 @@
 services:
-  eureka-server:
-    image: ${DOCKERHUB_USERNAME}/eureka-server:${EUREKA_IMAGE_TAG:-latest}
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
-    networks:
-      - tms-net
-
-  config-server:
-    image: ${DOCKERHUB_USERNAME}/config-server:${CONFIG_SERVER_IMAGE_TAG:-latest}
-    container_name: config-server
-    depends_on:
-      - eureka-server
-    environment:
-      CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
-      CONFIG_SERVER_PASSWORD: ${CONFIG_SERVER_PASSWORD}
-      CONFIG_REPO_URI: ${CONFIG_REPO_URI}
-      CONFIG_REPO_USERNAME: ${CONFIG_REPO_USERNAME}
-      CONFIG_REPO_TOKEN: ${CONFIG_REPO_TOKEN}
-      EUREKA_URL: http://eureka-server:8761/eureka/
-    ports:
-      - "7777:7777"
-    networks:
-      - tms-net
-
   auth-service:
     image: ${DOCKERHUB_USERNAME}/auth-service:${AUTH_IMAGE_TAG:-latest}
     container_name: auth-service
-    depends_on:
-      - config-server
-      - eureka-server
     environment:
-      CONFIG_SERVER_HOST: config-server
-      CONFIG_SERVER_PORT: 7777
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
       CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
       CONFIG_SERVER_PASSWORD_ENCODED: ${CONFIG_SERVER_PASSWORD_ENCODED}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tms-net
 
   timesheet-service:
     image: ${DOCKERHUB_USERNAME}/timesheet-service:${TIMESHEET_IMAGE_TAG:-latest}
     container_name: timesheet-service
-    depends_on:
-      - config-server
-      - eureka-server
     environment:
-      CONFIG_SERVER_HOST: config-server
-      CONFIG_SERVER_PORT: 7777
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
       CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
       CONFIG_SERVER_PASSWORD_ENCODED: ${CONFIG_SERVER_PASSWORD_ENCODED}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tms-net
 
   leave-service:
     image: ${DOCKERHUB_USERNAME}/leave-service:${LEAVE_IMAGE_TAG:-latest}
     container_name: leave-service
-    depends_on:
-      - config-server
-      - eureka-server
     environment:
-      CONFIG_SERVER_HOST: config-server
-      CONFIG_SERVER_PORT: 7777
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
       CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
       CONFIG_SERVER_PASSWORD_ENCODED: ${CONFIG_SERVER_PASSWORD_ENCODED}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tms-net
 
   admin-service:
     image: ${DOCKERHUB_USERNAME}/admin-service:${ADMIN_IMAGE_TAG:-latest}
     container_name: admin-service
-    depends_on:
-      - config-server
-      - eureka-server
     environment:
-      CONFIG_SERVER_HOST: config-server
-      CONFIG_SERVER_PORT: 7777
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
       CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
       CONFIG_SERVER_PASSWORD_ENCODED: ${CONFIG_SERVER_PASSWORD_ENCODED}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tms-net
 
@@ -100,16 +71,16 @@ services:
       - timesheet-service
       - leave-service
       - admin-service
-      - config-server
-      - eureka-server
     environment:
-      CONFIG_SERVER_HOST: config-server
-      CONFIG_SERVER_PORT: 7777
+      CONFIG_SERVER_HOST: ${CONFIG_SERVER_HOST}
+      CONFIG_SERVER_PORT: ${CONFIG_SERVER_PORT}
       CONFIG_SERVER_USERNAME: ${CONFIG_SERVER_USERNAME}
       CONFIG_SERVER_PASSWORD_ENCODED: ${CONFIG_SERVER_PASSWORD_ENCODED}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL}
       APP_JWT_SECRET: ${APP_JWT_SECRET}
       APP_JWT_EXPIRATION_MS: ${APP_JWT_EXPIRATION_MS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
     networks:
