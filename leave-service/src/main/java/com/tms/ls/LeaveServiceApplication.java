@@ -15,4 +15,4 @@ public class LeaveServiceApplication {
 		SpringApplication.run(LeaveServiceApplication.class, args);
 	}
 
-}//server
+}
