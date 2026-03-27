@@ -23,7 +23,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -58,7 +57,7 @@ class LeaveServiceImplTest {
     private AuthServiceClient authServiceClient;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private LeaveRequestEventPublisher leaveRequestEventPublisher;
 
     @Mock
     private HolidayService holidayService;
@@ -103,10 +102,7 @@ class LeaveServiceImplTest {
         assertEquals(new BigDecimal("3"), balance.getPending());
 
         ArgumentCaptor<LeaveRequestedEvent> eventCaptor = ArgumentCaptor.forClass(LeaveRequestedEvent.class);
-        verify(rabbitTemplate).convertAndSend(
-                eq(com.tms.ls.config.RabbitMQConfig.EXCHANGE),
-                eq(com.tms.ls.config.RabbitMQConfig.LEAVE_ROUTING_KEY),
-                eventCaptor.capture());
+        verify(leaveRequestEventPublisher).publishLeaveRequestedEvent(eventCaptor.capture());
         assertEquals("REQ-1", eventCaptor.getValue().getRequestId());
         assertEquals("MGR-1", eventCaptor.getValue().getApproverId());
     }

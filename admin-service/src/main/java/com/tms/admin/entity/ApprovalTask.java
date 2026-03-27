@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "approval_tasks")
+@Table(name = "approval_tasks", indexes = {
+        @Index(name = "idx_approval_approver_status_created", columnList = "approver_id,status,created_at"),
+        @Index(name = "idx_approval_target_lookup", columnList = "target_type,target_id")
+})
 public class ApprovalTask {
 
     @Id

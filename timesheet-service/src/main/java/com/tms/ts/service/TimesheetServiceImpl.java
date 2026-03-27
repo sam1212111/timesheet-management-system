@@ -8,7 +8,6 @@ import com.tms.ts.dto.*;
 import com.tms.ts.entity.*;
 import com.tms.ts.event.TimesheetSubmittedEvent;
 import com.tms.ts.repository.*;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +26,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final ProjectRepository projectRepository;
     private final AuthServiceClient authServiceClient;
     private final IdGeneratorUtil idGeneratorUtil;
-    private final RabbitTemplate rabbitTemplate;
+    private final TimesheetSubmissionEventPublisher timesheetSubmissionEventPublisher;
     private static final java.math.BigDecimal MAX_DAILY_HOURS = new java.math.BigDecimal("24.0");
 
     public TimesheetServiceImpl(TimesheetRepository timesheetRepository,
@@ -35,13 +34,13 @@ public class TimesheetServiceImpl implements TimesheetService {
                                  ProjectRepository projectRepository,
                                  AuthServiceClient authServiceClient,
                                  IdGeneratorUtil idGeneratorUtil,
-                                 RabbitTemplate rabbitTemplate) {
+                                 TimesheetSubmissionEventPublisher timesheetSubmissionEventPublisher) {
         this.timesheetRepository = timesheetRepository;
         this.timesheetEntryRepository = timesheetEntryRepository;
         this.projectRepository = projectRepository;
         this.authServiceClient = authServiceClient;
         this.idGeneratorUtil = idGeneratorUtil;
-        this.rabbitTemplate = rabbitTemplate;
+        this.timesheetSubmissionEventPublisher = timesheetSubmissionEventPublisher;
     }
 
     @Override
@@ -216,10 +215,7 @@ public class TimesheetServiceImpl implements TimesheetService {
                 approverId,
                 savedTimesheet.getWeekStart()
         );
-        rabbitTemplate.convertAndSend(
-                com.tms.ts.config.RabbitMQConfig.EXCHANGE,
-                com.tms.ts.config.RabbitMQConfig.TIMESHEET_ROUTING_KEY,
-                event);
+        timesheetSubmissionEventPublisher.publishTimesheetSubmittedEvent(event);
 
         return mapToTimesheetResponse(savedTimesheet);
     }

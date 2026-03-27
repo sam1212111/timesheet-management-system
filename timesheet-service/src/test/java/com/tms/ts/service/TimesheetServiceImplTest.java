@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -57,7 +56,7 @@ class TimesheetServiceImplTest {
     private IdGeneratorUtil idGeneratorUtil;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private TimesheetSubmissionEventPublisher timesheetSubmissionEventPublisher;
 
     @InjectMocks
     private TimesheetServiceImpl timesheetService;
@@ -377,7 +376,7 @@ class TimesheetServiceImplTest {
 
             assertEquals(TimesheetStatus.SUBMITTED, response.getStatus());
             verify(timesheetRepository).save(testTimesheet);
-            verify(rabbitTemplate).convertAndSend(eq("timesheet.exchange"), eq("timesheet.submitted"), any(TimesheetSubmittedEvent.class));
+            verify(timesheetSubmissionEventPublisher).publishTimesheetSubmittedEvent(any(TimesheetSubmittedEvent.class));
         }
 
         @Test

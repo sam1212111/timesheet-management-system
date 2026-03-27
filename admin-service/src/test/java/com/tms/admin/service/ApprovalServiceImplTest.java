@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +29,7 @@ class ApprovalServiceImplTest {
     private ApprovalTaskRepository taskRepository;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private ApprovalCompletionEventPublisher approvalCompletionEventPublisher;
 
     @InjectMocks
     private ApprovalServiceImpl service;
@@ -59,7 +58,7 @@ class ApprovalServiceImplTest {
 
         assertEquals(ApprovalStatus.APPROVED, response.getStatus());
         assertEquals("Looks good", response.getComments());
-        verify(rabbitTemplate).convertAndSend(eq("admin.exchange"), eq("approval.completed"), org.mockito.ArgumentMatchers.<Object>any());
+        verify(approvalCompletionEventPublisher).publishApprovalCompletedEvent(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

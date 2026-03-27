@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -26,7 +25,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +43,7 @@ class AuthServiceImplTest {
     private IdGeneratorUtil idGeneratorUtil;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private UserRegistrationEventPublisher userRegistrationEventPublisher;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -103,7 +101,7 @@ class AuthServiceImplTest {
             verify(userRepository).existsByEmail("john@example.com");
             verify(userRepository).existsByEmployeeCode("EMP-001");
             verify(userRepository).save(any(User.class));
-            verify(rabbitTemplate).convertAndSend(anyString(), anyString(), isA(Object.class));
+            verify(userRegistrationEventPublisher).publishUserRegisteredEvent(testUser);
         }
 
         @Test

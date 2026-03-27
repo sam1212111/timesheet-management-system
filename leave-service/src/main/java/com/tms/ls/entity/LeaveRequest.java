@@ -5,7 +5,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "leave_requests")
+@Table(name = "leave_requests", indexes = {
+        @Index(name = "idx_leave_request_employee_start", columnList = "employee_id,start_date"),
+        @Index(name = "idx_leave_request_approver", columnList = "approver_id")
+})
 public class LeaveRequest {
 
     @Id

@@ -5,7 +5,6 @@ import com.tms.admin.dto.ApprovalTaskResponse;
 import com.tms.admin.entity.ApprovalStatus;
 import com.tms.admin.entity.ApprovalTask;
 import com.tms.admin.repository.ApprovalTaskRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,11 +14,12 @@ import java.util.List;
 public class ApprovalServiceImpl implements ApprovalService {
 
     private final ApprovalTaskRepository taskRepository;
-    private final RabbitTemplate rabbitTemplate;
+    private final ApprovalCompletionEventPublisher approvalCompletionEventPublisher;
 
-    public ApprovalServiceImpl(ApprovalTaskRepository taskRepository, RabbitTemplate rabbitTemplate) {
+    public ApprovalServiceImpl(ApprovalTaskRepository taskRepository,
+                               ApprovalCompletionEventPublisher approvalCompletionEventPublisher) {
         this.taskRepository = taskRepository;
-        this.rabbitTemplate = rabbitTemplate;
+        this.approvalCompletionEventPublisher = approvalCompletionEventPublisher;
     }
 
     @Override
@@ -65,9 +65,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 newStatus.name(),
                 comments
         );
-        
-        // Publish to admin exchange so timesheet/leave services can act on it
-        rabbitTemplate.convertAndSend("admin.exchange", "approval.completed", event);
+        approvalCompletionEventPublisher.publishApprovalCompletedEvent(event);
 
         return mapToResponse(task);
     }

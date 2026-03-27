@@ -15,7 +15,6 @@ import com.tms.ls.entity.LeaveType;
 import com.tms.ls.repository.LeaveBalanceRepository;
 import com.tms.ls.repository.LeavePolicyRepository;
 import com.tms.ls.repository.LeaveRequestRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,20 +33,20 @@ public class LeaveServiceImpl implements LeaveService {
     private final LeavePolicyRepository leavePolicyRepository;
     private final LeaveRequestRepository requestRepository;
     private final AuthServiceClient authServiceClient;
-    private final RabbitTemplate rabbitTemplate;
+    private final LeaveRequestEventPublisher leaveRequestEventPublisher;
     private final HolidayService holidayService;
 
     public LeaveServiceImpl(LeaveBalanceRepository balanceRepository,
                             LeavePolicyRepository leavePolicyRepository,
                             LeaveRequestRepository requestRepository,
                             AuthServiceClient authServiceClient,
-                            RabbitTemplate rabbitTemplate,
+                            LeaveRequestEventPublisher leaveRequestEventPublisher,
                             HolidayService holidayService) {
         this.balanceRepository = balanceRepository;
         this.leavePolicyRepository = leavePolicyRepository;
         this.requestRepository = requestRepository;
         this.authServiceClient = authServiceClient;
-        this.rabbitTemplate = rabbitTemplate;
+        this.leaveRequestEventPublisher = leaveRequestEventPublisher;
         this.holidayService = holidayService;
     }
 
@@ -149,10 +148,7 @@ public class LeaveServiceImpl implements LeaveService {
                 request.getStartDate(),
                 request.getEndDate()
         );
-        rabbitTemplate.convertAndSend(
-                com.tms.ls.config.RabbitMQConfig.EXCHANGE,
-                com.tms.ls.config.RabbitMQConfig.LEAVE_ROUTING_KEY,
-                event);
+        leaveRequestEventPublisher.publishLeaveRequestedEvent(event);
 
         return mapReqToResponse(request);
     }

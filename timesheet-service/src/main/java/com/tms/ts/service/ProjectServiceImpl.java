@@ -7,7 +7,10 @@ import com.tms.ts.dto.ProjectRequest;
 import com.tms.ts.dto.ProjectResponse;
 import com.tms.ts.entity.Project;
 import com.tms.ts.repository.ProjectRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +28,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @CacheEvict(value = "activeProjects", allEntries = true)
     public ProjectResponse createProject(ProjectRequest request) {
 
         if (projectRepository.existsByCode(request.getCode())) {
@@ -44,6 +48,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @CacheEvict(value = "activeProjects", allEntries = true)
     public ProjectResponse updateProject(String id, ProjectRequest request) {
 
         Project project = projectRepository.findById(id)
@@ -64,6 +69,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProjectResponse getProject(String id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND));
@@ -71,6 +77,8 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @Cacheable("activeProjects")
     public List<ProjectResponse> getAllActiveProjects() {
         return projectRepository.findByActiveTrue()
                 .stream()
@@ -79,6 +87,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @CacheEvict(value = "activeProjects", allEntries = true)
     public void deactivateProject(String id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND));
