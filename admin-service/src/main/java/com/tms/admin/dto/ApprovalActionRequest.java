@@ -7,7 +7,9 @@ public class ApprovalActionRequest {
     @Schema(description = "Optional reviewer comments", example = "Approved after checking leave balance")
     private String comments;
 
-    public ApprovalActionRequest() {}
+    public ApprovalActionRequest() {
+        // Default constructor for Jackson deserialization.
+    }
 
     public String getComments() {
         return comments;

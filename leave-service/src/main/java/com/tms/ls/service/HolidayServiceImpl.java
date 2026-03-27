@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class HolidayServiceImpl implements HolidayService {
@@ -23,7 +22,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Transactional(readOnly = true)
     public List<HolidayResponse> getAllHolidays() {
         return holidayRepository.findAllByOrderByDateAsc()
-                .stream().map(this::mapToResponse).collect(Collectors.toList());
+                .stream().map(this::mapToResponse).toList();
     }
 
     @Override

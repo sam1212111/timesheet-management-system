@@ -15,7 +15,7 @@ public class RabbitMQConfig {
     public static final String TIMESHEET_ROUTING_KEY = "timesheet.submitted";
 
     @Bean
-    public TopicExchange exchange() {
+    public TopicExchange timesheetExchange() {
         return new TopicExchange(EXCHANGE);
     }
 
@@ -28,7 +28,7 @@ public class RabbitMQConfig {
     public Binding timesheetBinding() {
         return BindingBuilder
                 .bind(timesheetQueue())
-                .to(exchange())
+                .to(timesheetExchange())
                 .with(TIMESHEET_ROUTING_KEY);
     }
 

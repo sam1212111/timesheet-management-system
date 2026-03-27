@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.tms</groupId>
+    <artifactId>timesheet-management-system</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>timesheet-management-system</name>
+
+    <properties>
+        <sonar-maven-plugin.version>5.5.0.6356</sonar-maven-plugin.version>
+        <sonar.coverage.exclusions>
+            **/*ApplicationTests.java,
+            **/config/**,
+            **/dto/**,
+            **/entity/**,
+            **/event/**,
+            **/messaging/**,
+            **/exception/**,
+            **/client/fallback/**
+        </sonar.coverage.exclusions>
+        <sonar.cpd.exclusions>
+            **/*ApplicationTests.java,
+            **/config/**,
+            **/dto/**,
+            **/entity/**,
+            **/event/**,
+            **/exception/**
+        </sonar.cpd.exclusions>
+    </properties>
+
+    <modules>
+        <module>common</module>
+        <module>auth-service</module>
+        <module>timesheet-service</module>
+        <module>leave-service</module>
+        <module>admin-service</module>
+        <module>api-gateway</module>
+        <module>Config-Server</module>
+        <module>EurekaServer</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>${sonar-maven-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

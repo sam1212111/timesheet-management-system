@@ -29,7 +29,9 @@ public class Holiday {
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
-    public Holiday() {}
+    public Holiday() {
+        // Required by JPA.
+    }
 
     public Holiday(LocalDate date, String name, HolidayType type) {
         this.date = date;

@@ -11,7 +11,9 @@ public class LeaveRequestedEvent implements Serializable {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    public LeaveRequestedEvent() {}
+    public LeaveRequestedEvent() {
+        // Default constructor for message conversion.
+    }
 
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }

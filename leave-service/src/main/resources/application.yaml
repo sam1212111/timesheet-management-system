@@ -3,6 +3,10 @@ spring:
     name: leave-service
   config:
     import: optional:configserver:http://${app.config-server.username}:${app.config-server.password}@${app.config-server.host}:${app.config-server.port}
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
 
 server:
   forward-headers-strategy: framework
@@ -10,10 +14,6 @@ server:
     type: caffeine
     caffeine:
       spec: maximumSize=500,expireAfterWrite=5m
-  cloud:
-    openfeign:
-      circuitbreaker:
-        enabled: true
 
 eureka:
   client:

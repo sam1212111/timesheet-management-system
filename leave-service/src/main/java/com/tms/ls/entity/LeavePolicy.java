@@ -53,7 +53,9 @@ public class LeavePolicy {
         updatedAt = LocalDateTime.now();
     }
 
-    public LeavePolicy() {}
+    public LeavePolicy() {
+        // Required by JPA.
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

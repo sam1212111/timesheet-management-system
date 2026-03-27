@@ -1,55 +1,57 @@
 package com.tms.as.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tms.as.dto.*;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tms.as.dto.AdminUpdateUserRequest;
+import com.tms.as.dto.AuthResponse;
+import com.tms.as.dto.LoginRequest;
+import com.tms.as.dto.RegisterRequest;
+import com.tms.as.dto.UpdateProfileRequest;
+import com.tms.as.dto.UserResponse;
 import com.tms.as.entity.Role;
 import com.tms.as.entity.Status;
-import com.tms.as.security.JwtAuthenticationFilter;
 import com.tms.as.service.AuthService;
-import com.tms.common.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockBean
+    @Mock
     private AuthService authService;
 
-    @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockBean
-    private JwtUtil jwtUtil;
-
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
     private UserResponse userResponse;
     private AuthResponse authResponse;
 
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .build();
+
         userResponse = new UserResponse();
         userResponse.setId("USR-ABC12345");
         userResponse.setFullName("John Doe");
@@ -66,7 +68,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /register - Should register successfully")
+    @DisplayName("POST /register should register successfully")
     void register_Success() throws Exception {
         RegisterRequest request = new RegisterRequest();
         request.setFullName("John Doe");
@@ -87,7 +89,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /login - Should login successfully")
+    @DisplayName("POST /login should login successfully")
     void login_Success() throws Exception {
         LoginRequest request = new LoginRequest();
         request.setEmail("john@example.com");
@@ -106,20 +108,19 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "john@example.com")
-    @DisplayName("GET /profile/{id} - Should return profile")
+    @DisplayName("GET /profile/{id} should return profile")
     void getProfile_Success() throws Exception {
         when(authService.getProfile(anyString(), anyString())).thenReturn(userResponse);
 
-        mockMvc.perform(get("/api/v1/auth/profile/USR-ABC12345"))
+        mockMvc.perform(get("/api/v1/auth/profile/USR-ABC12345")
+                        .principal(new UsernamePasswordAuthenticationToken("john@example.com", null)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("USR-ABC12345"))
                 .andExpect(jsonPath("$.fullName").value("John Doe"));
     }
 
     @Test
-    @WithMockUser(username = "john@example.com")
-    @DisplayName("PUT /profile/{id} - Should update profile")
+    @DisplayName("PUT /profile/{id} should update profile")
     void updateProfile_Success() throws Exception {
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setFullName("John Updated");
@@ -137,6 +138,7 @@ class AuthControllerTest {
                 .thenReturn(updatedResponse);
 
         mockMvc.perform(put("/api/v1/auth/profile/USR-ABC12345")
+                        .principal(new UsernamePasswordAuthenticationToken("john@example.com", null))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -144,8 +146,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    @DisplayName("PUT /admin/users/{id} - Should admin update user")
+    @DisplayName("PUT /admin/users/{id} should admin update user")
     void adminUpdateUser_Success() throws Exception {
         AdminUpdateUserRequest request = new AdminUpdateUserRequest();
         request.setFullName("John Admin Updated");
@@ -173,10 +174,9 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /register - Should return 400 for invalid request")
+    @DisplayName("POST /register should return 400 for invalid request")
     void register_InvalidRequest() throws Exception {
         RegisterRequest request = new RegisterRequest();
-        // All fields blank — should trigger validation errors
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

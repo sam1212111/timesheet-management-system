@@ -7,7 +7,10 @@
 target/
 *.class
 *.log
-
+diagrams/
+test-diagram.png
+tools/generate_diagram_images.ps1
+tools/generate_ppt.py
 # Node
 node_modules/
 

@@ -19,12 +19,12 @@ public class TimesheetFallback implements TimesheetServiceClient {
     @Override
     public void approveTimesheet(String id, java.util.Map<String, String> comments) {
         log.warn("Timesheet Service is unreachable for approveTimesheet fallback. TimesheetId: {}", id);
-        throw new RuntimeException("Timesheet service is currently unavailable. Please try again later.");
+        throw new IllegalStateException("Timesheet service is currently unavailable. Please try again later.");
     }
 
     @Override
     public void rejectTimesheet(String id, java.util.Map<String, String> comments) {
         log.warn("Timesheet Service is unreachable for rejectTimesheet fallback. TimesheetId: {}", id);
-        throw new RuntimeException("Timesheet service is currently unavailable. Please try again later.");
+        throw new IllegalStateException("Timesheet service is currently unavailable. Please try again later.");
     }
 }

@@ -43,7 +43,7 @@ public class ProjectController {
             @Parameter(description = "Project ID", example = "PRJ-0FC7A60F")
             @PathVariable("id") String id,
             @Valid @RequestBody ProjectRequest request) {
-        return ResponseEntity.ok(projectService.updateProject(id, request));
+        return ResponseEntity.ok(projectService.updateProject(id, request));  
     }
 
     @GetMapping("/{id}")

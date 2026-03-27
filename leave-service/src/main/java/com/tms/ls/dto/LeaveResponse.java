@@ -17,7 +17,9 @@ public class LeaveResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public LeaveResponse() {}
+    public LeaveResponse() {
+        // Default constructor for JSON serialization/deserialization.
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

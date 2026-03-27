@@ -16,10 +16,11 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class TimesheetServiceImpl implements TimesheetService {
+    private static final String COMMENTS_KEY = "comments";
+    private static final String TIMESHEET_NOT_FOUND_FOR_WEEK = "Timesheet not found for this week";
 
     private final TimesheetRepository timesheetRepository;
     private final TimesheetEntryRepository timesheetEntryRepository;
@@ -160,7 +161,7 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         Timesheet timesheet = timesheetRepository
                 .findByEmployeeIdAndWeekStart(employeeId, weekStart)
-                .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found for this week"));
+                .orElseThrow(() -> new ResourceNotFoundException(TIMESHEET_NOT_FOUND_FOR_WEEK));
 
         return mapToTimesheetResponse(timesheet);
     }
@@ -170,7 +171,7 @@ public class TimesheetServiceImpl implements TimesheetService {
         List<Timesheet> timesheets = timesheetRepository.findByEmployeeId(employeeId);
         return timesheets.stream()
                 .map(this::mapToTimesheetResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -179,7 +180,7 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         Timesheet timesheet = timesheetRepository
                 .findByEmployeeIdAndWeekStart(employeeId, request.getWeekStart())
-                .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found for this week"));
+                .orElseThrow(() -> new ResourceNotFoundException(TIMESHEET_NOT_FOUND_FOR_WEEK));
 
         if (timesheet.getStatus() != TimesheetStatus.DRAFT
                 && timesheet.getStatus() != TimesheetStatus.REJECTED) {
@@ -231,8 +232,8 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found"));
         timesheet.setStatus(TimesheetStatus.APPROVED);
         timesheet.setApprovedAt(LocalDateTime.now());
-        if (comments != null && comments.containsKey("comments")) {
-            timesheet.setComments(comments.get("comments"));
+        if (comments != null && comments.containsKey(COMMENTS_KEY)) {
+            timesheet.setComments(comments.get(COMMENTS_KEY));
         }
         timesheetRepository.save(timesheet);
     }
@@ -243,8 +244,8 @@ public class TimesheetServiceImpl implements TimesheetService {
         Timesheet timesheet = timesheetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found"));
         timesheet.setStatus(TimesheetStatus.REJECTED);
-        if (comments != null && comments.containsKey("comments")) {
-            timesheet.setRejectionReason(comments.get("comments"));
+        if (comments != null && comments.containsKey(COMMENTS_KEY)) {
+            timesheet.setRejectionReason(comments.get(COMMENTS_KEY));
         }
         timesheetRepository.save(timesheet);
     }
@@ -253,7 +254,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     public TimesheetValidationResponse validateTimesheet(LocalDate weekStart, String employeeId) {
         Timesheet timesheet = timesheetRepository
                 .findByEmployeeIdAndWeekStart(employeeId, weekStart)
-                .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found for this week"));
+                .orElseThrow(() -> new ResourceNotFoundException(TIMESHEET_NOT_FOUND_FOR_WEEK));
 
         List<TimesheetEntry> entries = timesheet.getEntries();
         java.util.List<String> errors = new java.util.ArrayList<>();
@@ -330,7 +331,7 @@ public class TimesheetServiceImpl implements TimesheetService {
                             .orElse("Unknown Project");
                     return mapToEntryResponse(entry, projectName);
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         response.setEntries(entries);
         return response;

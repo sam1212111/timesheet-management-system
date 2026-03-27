@@ -1,7 +1,6 @@
 package com.tms.ts.service;
 
 import com.tms.common.exception.ResourceAlreadyExistsException;
-import com.tms.common.exception.ResourceNotFoundException;
 import com.tms.common.util.IdGeneratorUtil;
 import com.tms.ts.dto.ProjectRequest;
 import com.tms.ts.dto.ProjectResponse;
@@ -15,12 +14,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -120,5 +118,17 @@ class ProjectServiceImplTest {
 
         assertFalse(testProject.isActive());
         verify(projectRepository).save(testProject);
+    }
+
+    @Test
+    @DisplayName("Should return all active projects")
+    void getAllActiveProjects_Success() {
+        when(projectRepository.findByActiveTrue()).thenReturn(List.of(testProject));
+
+        List<ProjectResponse> response = projectService.getAllActiveProjects();
+
+        assertEquals(1, response.size());
+        assertEquals("PRJ-101", response.get(0).getId());
+        assertEquals("TMS Dashboard", response.get(0).getName());
     }
 }

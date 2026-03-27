@@ -19,7 +19,9 @@ public class LeaveRequestDto {
 
     private String reason;
 
-    public LeaveRequestDto() {}
+    public LeaveRequestDto() {
+        // Default constructor for Jackson deserialization.
+    }
 
     public LeaveType getLeaveType() { return leaveType; }
     public void setLeaveType(LeaveType leaveType) { this.leaveType = leaveType; }

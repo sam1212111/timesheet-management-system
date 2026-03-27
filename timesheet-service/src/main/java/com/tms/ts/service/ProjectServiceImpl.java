@@ -10,10 +10,10 @@ import com.tms.ts.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
+    private static final String PROJECT_NOT_FOUND = "Project not found";
 
     private final ProjectRepository projectRepository;
     private final IdGeneratorUtil idGeneratorUtil;
@@ -47,7 +47,7 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse updateProject(String id, ProjectRequest request) {
 
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND));
 
         if (!project.getCode().equals(request.getCode())
                 && projectRepository.existsByCode(request.getCode())) {
@@ -66,7 +66,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectResponse getProject(String id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND));
         return mapToProjectResponse(project);
     }
 
@@ -75,13 +75,13 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.findByActiveTrue()
                 .stream()
                 .map(this::mapToProjectResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public void deactivateProject(String id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(PROJECT_NOT_FOUND));
         project.setActive(false);
         projectRepository.save(project);
     }

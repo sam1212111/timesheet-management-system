@@ -10,7 +10,9 @@ public class TimesheetSubmittedEvent implements Serializable {
     private String approverId;
     private LocalDate weekStart;
 
-    public TimesheetSubmittedEvent() {}
+    public TimesheetSubmittedEvent() {
+        // Default constructor for message conversion.
+    }
 
     public TimesheetSubmittedEvent(String timesheetId, String employeeId, String approverId, LocalDate weekStart) {
         this.timesheetId = timesheetId;
@@ -50,4 +52,4 @@ public class TimesheetSubmittedEvent implements Serializable {
     public void setWeekStart(LocalDate weekStart) {
         this.weekStart = weekStart;
     }
-}
+}

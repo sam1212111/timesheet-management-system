@@ -26,6 +26,7 @@ import com.tms.common.util.JwtUtil;
 
 @Service
 public class AuthServiceImpl implements AuthService {
+    private static final String USER_NOT_FOUND = "User not found";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -79,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (user.getStatus() == Status.INACTIVE) {
             throw new UnauthorizedException("Account is inactive");
@@ -113,10 +114,10 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse getProfile(String id, String loggedInEmail) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         User loggedInUser = userRepository.findByEmail(loggedInEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (!loggedInUser.getId().equals(id) && loggedInUser.getRole() != Role.ADMIN) {
             throw new UnauthorizedException("You can only view your own profile");
@@ -142,7 +143,7 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse updateProfile(String id, UpdateProfileRequest request, String loggedInEmail) {
 
         User loggedInUser = userRepository.findByEmail(loggedInEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (!loggedInUser.getId().equals(id)) {
             throw new UnauthorizedException("You can only update your own profile");
@@ -168,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse adminUpdateUser(String id, AdminUpdateUserRequest request) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (!user.getEmail().equals(request.getEmail()) &&
                 userRepository.existsByEmail(request.getEmail())) {
@@ -201,7 +202,7 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse assignManager(String id, String managerId) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         User manager = userRepository.findById(managerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));

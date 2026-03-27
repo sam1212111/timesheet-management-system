@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Configuration
 @SecurityScheme(
@@ -48,7 +47,7 @@ public class SwaggerConfig {
                         List<io.swagger.v3.oas.models.parameters.Parameter> visibleParameters =
                                 operation.getParameters().stream()
                                         .filter(parameter -> !hiddenHeaders.contains(parameter.getName()))
-                                        .collect(Collectors.toList());
+                                        .toList();
                         operation.setParameters(visibleParameters);
                     })
             );

@@ -9,7 +9,9 @@ public class ApprovalCompletedEvent implements Serializable {
     private String status;
     private String comments;
 
-    public ApprovalCompletedEvent() {}
+    public ApprovalCompletedEvent() {
+        // Default constructor for message conversion.
+    }
 
     public ApprovalCompletedEvent(String targetType, String targetId, String employeeId, String status, String comments) {
         this.targetType = targetType;

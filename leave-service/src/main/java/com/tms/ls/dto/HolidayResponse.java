@@ -9,7 +9,9 @@ public class HolidayResponse {
     private String name;
     private HolidayType type;
 
-    public HolidayResponse() {}
+    public HolidayResponse() {
+        // Default constructor for JSON serialization/deserialization.
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

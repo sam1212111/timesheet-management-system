@@ -11,7 +11,9 @@ public class LeaveBalanceResponse {
     private BigDecimal used;
     private BigDecimal pending;
 
-    public LeaveBalanceResponse() {}
+    public LeaveBalanceResponse() {
+        // Default constructor for JSON serialization/deserialization.
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

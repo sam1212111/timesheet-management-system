@@ -3,7 +3,6 @@ package com.tms.ls.service;
 import com.tms.ls.dto.LeaveBalanceResponse;
 import com.tms.ls.dto.LeaveRequestDto;
 import com.tms.ls.dto.LeaveResponse;
-import com.tms.ls.dto.LeaveResponse;
 import com.tms.ls.dto.TeamCalendarResponse;
 
 import java.util.List;

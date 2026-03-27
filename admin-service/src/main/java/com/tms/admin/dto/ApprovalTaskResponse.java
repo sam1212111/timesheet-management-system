@@ -15,7 +15,9 @@ public class ApprovalTaskResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public ApprovalTaskResponse() {}
+    public ApprovalTaskResponse() {
+        // Default constructor for JSON serialization/deserialization.
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

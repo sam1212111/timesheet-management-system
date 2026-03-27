@@ -23,10 +23,12 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class LeaveServiceImpl implements LeaveService {
+    private static final String COMMENTS_KEY = "comments";
+    private static final String LEAVE_REQUEST_NOT_FOUND = "Leave request not found";
+    private static final String LEAVE_BALANCE_NOT_FOUND = "Leave balance not found";
 
     private final LeaveBalanceRepository balanceRepository;
     private final LeavePolicyRepository leavePolicyRepository;
@@ -53,7 +55,7 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional(readOnly = true)
     public TeamCalendarResponse getTeamCalendar(String managerId) {
         List<LeaveResponse> teamLeaves = requestRepository.findByApproverId(managerId)
-                .stream().map(this::mapReqToResponse).collect(Collectors.toList());
+                .stream().map(this::mapReqToResponse).toList();
         return new TeamCalendarResponse(teamLeaves, holidayService.getAllHolidays());
     }
 
@@ -64,7 +66,7 @@ public class LeaveServiceImpl implements LeaveService {
         if (balances.isEmpty()) {
             return List.of();
         }
-        return balances.stream().map(this::mapToResponse).collect(Collectors.toList());
+        return balances.stream().map(this::mapToResponse).toList();
     }
 
     @Override
@@ -91,7 +93,7 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional(readOnly = true)
     public List<LeaveResponse> getMyRequests(String employeeId) {
         return requestRepository.findByEmployeeIdOrderByStartDateDesc(employeeId)
-                .stream().map(this::mapReqToResponse).collect(Collectors.toList());
+                .stream().map(this::mapReqToResponse).toList();
     }
 
     @Override
@@ -112,7 +114,7 @@ public class LeaveServiceImpl implements LeaveService {
         }
 
         LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(employeeId, requestDto.getLeaveType())
-                .orElseThrow(() -> new IllegalArgumentException("Leave balance not found for type: " + requestDto.getLeaveType()));
+                .orElseThrow(() -> new IllegalArgumentException(LEAVE_BALANCE_NOT_FOUND + " for type: " + requestDto.getLeaveType()));
 
         BigDecimal available = balance.getTotalAllowed().subtract(balance.getUsed()).subtract(balance.getPending());
         
@@ -159,15 +161,15 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional
     public void approveLeave(String id, java.util.Map<String, String> comments) {
         LeaveRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(LEAVE_REQUEST_NOT_FOUND));
         request.setStatus(LeaveStatus.APPROVED);
-        if (comments != null && comments.containsKey("comments")) {
-            request.setReason(request.getReason() + " [Approver Comment: " + comments.get("comments") + "]");
+        if (comments != null && comments.containsKey(COMMENTS_KEY)) {
+            request.setReason(request.getReason() + " [Approver Comment: " + comments.get(COMMENTS_KEY) + "]");
         }
         requestRepository.save(request);
         
         LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(request.getEmployeeId(), request.getLeaveType())
-                .orElseThrow(() -> new IllegalArgumentException("Leave balance not found"));
+                .orElseThrow(() -> new IllegalArgumentException(LEAVE_BALANCE_NOT_FOUND));
         BigDecimal requestedDays = calculateWorkingDays(request.getStartDate(), request.getEndDate());
         balance.setPending(balance.getPending().subtract(requestedDays));
         balance.setUsed(balance.getUsed().add(requestedDays));
@@ -178,15 +180,15 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional
     public void rejectLeave(String id, java.util.Map<String, String> comments) {
         LeaveRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(LEAVE_REQUEST_NOT_FOUND));
         request.setStatus(LeaveStatus.REJECTED);
-        if (comments != null && comments.containsKey("comments")) {
-            request.setReason(request.getReason() + " [Approver Comment: " + comments.get("comments") + "]");
+        if (comments != null && comments.containsKey(COMMENTS_KEY)) {
+            request.setReason(request.getReason() + " [Approver Comment: " + comments.get(COMMENTS_KEY) + "]");
         }
         requestRepository.save(request);
         
         LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(request.getEmployeeId(), request.getLeaveType())
-                .orElseThrow(() -> new IllegalArgumentException("Leave balance not found"));
+                .orElseThrow(() -> new IllegalArgumentException(LEAVE_BALANCE_NOT_FOUND));
         BigDecimal requestedDays = calculateWorkingDays(request.getStartDate(), request.getEndDate());
         balance.setPending(balance.getPending().subtract(requestedDays));
         balanceRepository.save(balance);
@@ -196,7 +198,7 @@ public class LeaveServiceImpl implements LeaveService {
     @Transactional
     public void cancelLeaveRequest(String id, String employeeId) {
         LeaveRequest request = requestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(LEAVE_REQUEST_NOT_FOUND));
         
         if (!request.getEmployeeId().equals(employeeId)) {
             throw new IllegalArgumentException("Cannot cancel someone else's leave request");
@@ -211,7 +213,7 @@ public class LeaveServiceImpl implements LeaveService {
         requestRepository.save(request);
 
         LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(employeeId, request.getLeaveType())
-                .orElseThrow(() -> new IllegalArgumentException("Leave balance not found"));
+                .orElseThrow(() -> new IllegalArgumentException(LEAVE_BALANCE_NOT_FOUND));
         
         BigDecimal requestedDays = calculateWorkingDays(request.getStartDate(), request.getEndDate());
         

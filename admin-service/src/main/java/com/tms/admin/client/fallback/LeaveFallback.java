@@ -19,12 +19,12 @@ public class LeaveFallback implements LeaveServiceClient {
     @Override
     public void approveLeave(String id, java.util.Map<String, String> comments) {
         log.warn("Leave Service is unreachable for approveLeave fallback. RequestId: {}", id);
-        throw new RuntimeException("Leave service is currently unavailable. Please try again later.");
+        throw new IllegalStateException("Leave service is currently unavailable. Please try again later.");
     }
 
     @Override
     public void rejectLeave(String id, java.util.Map<String, String> comments) {
         log.warn("Leave Service is unreachable for rejectLeave fallback. RequestId: {}", id);
-        throw new RuntimeException("Leave service is currently unavailable. Please try again later.");
+        throw new IllegalStateException("Leave service is currently unavailable. Please try again later.");
     }
 }

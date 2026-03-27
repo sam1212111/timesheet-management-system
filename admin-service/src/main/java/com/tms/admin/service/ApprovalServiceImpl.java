@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ApprovalServiceImpl implements ApprovalService {
@@ -27,7 +26,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Transactional(readOnly = true)
     public List<ApprovalTaskResponse> getPendingApprovals(String approverId) {
         return taskRepository.findByApproverIdAndStatusOrderByCreatedAtDesc(approverId, ApprovalStatus.PENDING)
-                .stream().map(this::mapToResponse).collect(Collectors.toList());
+                .stream().map(this::mapToResponse).toList();
     }
 
     @Override

@@ -21,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -391,6 +390,41 @@ class AuthServiceImplTest {
             assertEquals(Role.MANAGER, response.getRole());
             assertEquals(Status.INACTIVE, response.getStatus());
             verify(userRepository).save(any(User.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Manager Assignment Tests")
+    class ManagerAssignmentTests {
+
+        @Test
+        @DisplayName("Should assign a valid manager successfully")
+        void assignManager_Success() {
+            User manager = new User();
+            manager.setId("USR-MGR001");
+            manager.setEmail("manager@example.com");
+            manager.setRole(Role.MANAGER);
+
+            when(userRepository.findById("USR-ABC12345")).thenReturn(Optional.of(testUser));
+            when(userRepository.findById("USR-MGR001")).thenReturn(Optional.of(manager));
+            when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+            UserResponse response = authService.assignManager("USR-ABC12345", "USR-MGR001");
+
+            assertNotNull(response);
+            assertEquals("USR-MGR001", testUser.getManagerId());
+            verify(userRepository).save(testUser);
+        }
+
+        @Test
+        @DisplayName("Should return the assigned manager id for an employee")
+        void getManagerForEmployee_Success() {
+            testUser.setManagerId("USR-MGR001");
+            when(userRepository.findById("USR-ABC12345")).thenReturn(Optional.of(testUser));
+
+            String managerId = authService.getManagerForEmployee("USR-ABC12345");
+
+            assertEquals("USR-MGR001", managerId);
         }
     }
 }

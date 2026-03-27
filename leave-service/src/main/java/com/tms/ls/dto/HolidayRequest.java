@@ -15,7 +15,9 @@ public class HolidayRequest {
     @NotNull(message = "Holiday type is required")
     private HolidayType type;
 
-    public HolidayRequest() {}
+    public HolidayRequest() {
+        // Default constructor for Jackson deserialization.
+    }
 
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
