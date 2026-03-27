@@ -11,6 +11,7 @@ diagrams/
 test-diagram.png
 tools/generate_diagram_images.ps1
 tools/generate_ppt.py
+TimeSheet_Leave_Management_System_Presentation.pptx
 # Node
 node_modules/
 
