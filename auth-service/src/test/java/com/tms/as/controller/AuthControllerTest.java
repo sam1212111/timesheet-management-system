@@ -3,8 +3,11 @@ package com.tms.as.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tms.as.dto.AdminUpdateUserRequest;
+import com.tms.as.dto.AdminUserDetailResponse;
+import com.tms.as.dto.AdminUserListItemResponse;
 import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
+import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
@@ -24,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,6 +48,9 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
     private UserResponse userResponse;
     private AuthResponse authResponse;
+    private AdminUserListItemResponse adminUserListItemResponse;
+    private AdminUserDetailResponse adminUserDetailResponse;
+    private ManagerOptionResponse managerOptionResponse;
 
     @BeforeEach
     void setUp() {
@@ -65,6 +72,34 @@ class AuthControllerTest {
         authResponse = new AuthResponse(
                 "jwt-token", "USR-ABC12345", "john@example.com", "John Doe", "EMPLOYEE"
         );
+
+        adminUserListItemResponse = new AdminUserListItemResponse();
+        adminUserListItemResponse.setId("USR-ABC12345");
+        adminUserListItemResponse.setFullName("John Doe");
+        adminUserListItemResponse.setEmail("john@example.com");
+        adminUserListItemResponse.setEmployeeCode("EMP-001");
+        adminUserListItemResponse.setRole(Role.EMPLOYEE);
+        adminUserListItemResponse.setStatus(Status.ACTIVE);
+        adminUserListItemResponse.setManagerId("USR-MGR001");
+        adminUserListItemResponse.setCreatedAt(LocalDateTime.now());
+        adminUserListItemResponse.setUpdatedAt(LocalDateTime.now());
+
+        adminUserDetailResponse = new AdminUserDetailResponse();
+        adminUserDetailResponse.setId("USR-ABC12345");
+        adminUserDetailResponse.setFullName("John Doe");
+        adminUserDetailResponse.setEmail("john@example.com");
+        adminUserDetailResponse.setEmployeeCode("EMP-001");
+        adminUserDetailResponse.setRole(Role.EMPLOYEE);
+        adminUserDetailResponse.setStatus(Status.ACTIVE);
+        adminUserDetailResponse.setManagerId("USR-MGR001");
+        adminUserDetailResponse.setCreatedAt(LocalDateTime.now());
+        adminUserDetailResponse.setUpdatedAt(LocalDateTime.now());
+
+        managerOptionResponse = new ManagerOptionResponse();
+        managerOptionResponse.setId("USR-MGR001");
+        managerOptionResponse.setFullName("Jane Manager");
+        managerOptionResponse.setEmail("manager@example.com");
+        managerOptionResponse.setRole(Role.MANAGER);
     }
 
     @Test
@@ -171,6 +206,44 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fullName").value("John Admin Updated"))
                 .andExpect(jsonPath("$.role").value("MANAGER"));
+    }
+
+    @Test
+    @DisplayName("GET /admin/users should return admin user list")
+    void getAdminUsers_Success() throws Exception {
+        when(authService.getAdminUsers(Role.EMPLOYEE, Status.ACTIVE, "john"))
+                .thenReturn(List.of(adminUserListItemResponse));
+
+        mockMvc.perform(get("/api/v1/auth/admin/users")
+                        .param("role", "EMPLOYEE")
+                        .param("status", "ACTIVE")
+                        .param("search", "john"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("USR-ABC12345"))
+                .andExpect(jsonPath("$[0].managerId").value("USR-MGR001"));
+    }
+
+    @Test
+    @DisplayName("GET /admin/users/{id} should return admin user detail")
+    void getAdminUserById_Success() throws Exception {
+        when(authService.getAdminUserById("USR-ABC12345")).thenReturn(adminUserDetailResponse);
+
+        mockMvc.perform(get("/api/v1/auth/admin/users/USR-ABC12345"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("USR-ABC12345"))
+                .andExpect(jsonPath("$.managerId").value("USR-MGR001"));
+    }
+
+    @Test
+    @DisplayName("GET /admin/managers should return assignable managers")
+    void getAssignableManagers_Success() throws Exception {
+        when(authService.getAssignableManagers("jane")).thenReturn(List.of(managerOptionResponse));
+
+        mockMvc.perform(get("/api/v1/auth/admin/managers")
+                        .param("search", "jane"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("USR-MGR001"))
+                .andExpect(jsonPath("$[0].role").value("MANAGER"));
     }
 
     @Test

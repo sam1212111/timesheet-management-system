@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -423,6 +424,71 @@ class AuthServiceImplTest {
             String managerId = authService.getManagerForEmployee("USR-ABC12345");
 
             assertEquals("USR-MGR001", managerId);
+        }
+    }
+
+    @Nested
+    @DisplayName("Admin User Query Tests")
+    class AdminUserQueryTests {
+
+        @Test
+        @DisplayName("Should return filtered admin user list")
+        void getAdminUsers_Success() {
+            testUser.setManagerId("USR-MGR001");
+            when(userRepository.findUsersForAdmin(Role.EMPLOYEE, Status.ACTIVE, "john"))
+                    .thenReturn(List.of(testUser));
+
+            List<AdminUserListItemResponse> response = authService.getAdminUsers(Role.EMPLOYEE, Status.ACTIVE, "john");
+
+            assertEquals(1, response.size());
+            assertEquals("USR-ABC12345", response.get(0).getId());
+            assertEquals("USR-MGR001", response.get(0).getManagerId());
+            verify(userRepository).findUsersForAdmin(Role.EMPLOYEE, Status.ACTIVE, "john");
+        }
+
+        @Test
+        @DisplayName("Should trim blank search for admin user list")
+        void getAdminUsers_BlankSearchUsesNull() {
+            when(userRepository.findUsersForAdmin(null, null, null)).thenReturn(List.of(testUser));
+
+            List<AdminUserListItemResponse> response = authService.getAdminUsers(null, null, "   ");
+
+            assertEquals(1, response.size());
+            verify(userRepository).findUsersForAdmin(null, null, null);
+        }
+
+        @Test
+        @DisplayName("Should return admin user detail by id")
+        void getAdminUserById_Success() {
+            testUser.setManagerId("USR-MGR001");
+            when(userRepository.findById("USR-ABC12345")).thenReturn(Optional.of(testUser));
+
+            AdminUserDetailResponse response = authService.getAdminUserById("USR-ABC12345");
+
+            assertEquals("USR-ABC12345", response.getId());
+            assertEquals("USR-MGR001", response.getManagerId());
+        }
+
+        @Test
+        @DisplayName("Should return assignable managers")
+        void getAssignableManagers_Success() {
+            User manager = new User();
+            manager.setId("USR-MGR001");
+            manager.setFullName("Manager Jane");
+            manager.setEmail("manager@example.com");
+            manager.setRole(Role.MANAGER);
+            manager.setStatus(Status.ACTIVE);
+            manager.setEmployeeCode("MGR-001");
+            manager.setManagerId("USR-ADMIN001");
+
+            when(userRepository.findAssignableManagers(List.of(Role.MANAGER, Role.ADMIN), Status.ACTIVE, "manager"))
+                    .thenReturn(List.of(manager));
+
+            List<ManagerOptionResponse> response = authService.getAssignableManagers("manager");
+
+            assertEquals(1, response.size());
+            assertEquals("USR-MGR001", response.get(0).getId());
+            assertEquals(Role.MANAGER, response.get(0).getRole());
         }
     }
 }
