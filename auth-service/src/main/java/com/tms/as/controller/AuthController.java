@@ -1,17 +1,23 @@
 package com.tms.as.controller;
 
 import com.tms.as.dto.AdminUpdateUserRequest;
+import com.tms.as.dto.AdminUserDetailResponse;
+import com.tms.as.dto.AdminUserListItemResponse;
 import com.tms.as.dto.AssignManagerRequest;
 import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
+import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
+import com.tms.as.entity.Role;
+import com.tms.as.entity.Status;
 import com.tms.as.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -70,6 +76,29 @@ public class AuthController {
     public ResponseEntity<UserResponse> assignManager(@PathVariable String id,
                                                       @Valid @RequestBody AssignManagerRequest request) {
         return ResponseEntity.ok(authService.assignManager(id, request.getManagerId()));
+    }
+
+    @GetMapping("/admin/users")
+    @Operation(summary = "List users for admin management", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AdminUserListItemResponse>> getAdminUsers(@RequestParam(required = false) Role role,
+                                                                         @RequestParam(required = false) Status status,
+                                                                         @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(authService.getAdminUsers(role, status, search));
+    }
+
+    @GetMapping("/admin/users/{id}")
+    @Operation(summary = "Get user details for admin management", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AdminUserDetailResponse> getAdminUserById(@PathVariable String id) {
+        return ResponseEntity.ok(authService.getAdminUserById(id));
+    }
+
+    @GetMapping("/admin/managers")
+    @Operation(summary = "List assignable managers", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ManagerOptionResponse>> getAssignableManagers(@RequestParam(required = false) String search) {
+        return ResponseEntity.ok(authService.getAssignableManagers(search));
     }
     
     @GetMapping("/users/{employeeId}/manager")

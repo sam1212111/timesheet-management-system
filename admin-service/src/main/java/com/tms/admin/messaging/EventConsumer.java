@@ -9,6 +9,7 @@ import com.tms.admin.service.WelcomeEmailService;
 import com.tms.common.event.UserRegisteredEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +72,7 @@ public class EventConsumer {
             welcomeEmailService.sendWelcomeEmail(event);
         } catch (Exception ex) {
             log.error("Failed to send welcome email to {}", event.getEmail(), ex);
+            throw new AmqpRejectAndDontRequeueException("Welcome email handling failed", ex);
         }
     }
 }

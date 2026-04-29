@@ -3,10 +3,17 @@ package com.tms.as.service;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import com.tms.as.dto.AdminUpdateUserRequest;
+import com.tms.as.dto.AdminUserDetailResponse;
+import com.tms.as.dto.AdminUserListItemResponse;
 import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
+import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
@@ -23,6 +30,7 @@ import com.tms.common.util.JwtUtil;
 @Service
 public class AuthServiceImpl implements AuthService {
     private static final String USER_NOT_FOUND = "User not found";
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -44,26 +52,36 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserResponse register(RegisterRequest request) {
+        long startedAt = System.nanoTime();
+        long stepStartedAt = startedAt;
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ResourceAlreadyExistsException("Email already registered");
         }
+        log.debug("register existsByEmail took {} ms", elapsedMillis(stepStartedAt));
 
+        stepStartedAt = System.nanoTime();
         if (userRepository.existsByEmployeeCode(request.getEmployeeCode())) {
             throw new ResourceAlreadyExistsException("Employee code already exists");
         }
+        log.debug("register existsByEmployeeCode took {} ms", elapsedMillis(stepStartedAt));
 
         User user = new User();
         user.setId(idGeneratorUtil.generateId("USR"));
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setEmployeeCode(request.getEmployeeCode());
+        stepStartedAt = System.nanoTime();
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        log.debug("register password encode took {} ms", elapsedMillis(stepStartedAt));
         user.setRole(Role.EMPLOYEE);
         user.setStatus(Status.ACTIVE);
 
+        stepStartedAt = System.nanoTime();
         User savedUser = userRepository.save(user);
+        log.debug("register user save took {} ms", elapsedMillis(stepStartedAt));
         userRegistrationEventPublisher.publishUserRegisteredEvent(savedUser);
+        log.debug("register total took {} ms", elapsedMillis(startedAt));
 
         return mapToUserResponse(savedUser);
     }
@@ -219,5 +237,76 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
         return user.getManagerId();
+    }
+
+    @Override
+    public List<AdminUserListItemResponse> getAdminUsers(Role role, Status status, String search) {
+        return userRepository.findUsersForAdmin(role, status, normalizeSearch(search))
+                .stream()
+                .map(this::mapToAdminUserListItem)
+                .toList();
+    }
+
+    @Override
+    public AdminUserDetailResponse getAdminUserById(String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
+        return mapToAdminUserDetail(user);
+    }
+
+    @Override
+    public List<ManagerOptionResponse> getAssignableManagers(String search) {
+        return userRepository.findAssignableManagers(List.of(Role.MANAGER, Role.ADMIN), Status.ACTIVE, normalizeSearch(search))
+                .stream()
+                .map(this::mapToManagerOption)
+                .toList();
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
+    }
+
+    private AdminUserListItemResponse mapToAdminUserListItem(User user) {
+        AdminUserListItemResponse response = new AdminUserListItemResponse();
+        response.setId(user.getId());
+        response.setEmployeeCode(user.getEmployeeCode());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        response.setStatus(user.getStatus());
+        response.setManagerId(user.getManagerId());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        return response;
+    }
+
+    private AdminUserDetailResponse mapToAdminUserDetail(User user) {
+        AdminUserDetailResponse response = new AdminUserDetailResponse();
+        response.setId(user.getId());
+        response.setEmployeeCode(user.getEmployeeCode());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        response.setStatus(user.getStatus());
+        response.setManagerId(user.getManagerId());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        return response;
+    }
+
+    private ManagerOptionResponse mapToManagerOption(User user) {
+        ManagerOptionResponse response = new ManagerOptionResponse();
+        response.setId(user.getId());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        return response;
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null || search.isBlank()) {
+            return null;
+        }
+        return search.trim();
     }
 }

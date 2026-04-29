@@ -1,6 +1,9 @@
 package com.tms.as.service;
 
 import com.tms.as.dto.*;
+import com.tms.as.entity.Role;
+import com.tms.as.entity.Status;
+import java.util.List;
 
 public interface AuthService {
 
@@ -17,4 +20,10 @@ public interface AuthService {
     UserResponse assignManager(String id, String managerId);
     
     String getManagerForEmployee(String employeeId);
+
+    List<AdminUserListItemResponse> getAdminUsers(Role role, Status status, String search);
+
+    AdminUserDetailResponse getAdminUserById(String id);
+
+    List<ManagerOptionResponse> getAssignableManagers(String search);
 }
