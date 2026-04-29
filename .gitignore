@@ -2,21 +2,34 @@
 .metadata/
 .project
 .classpath
+.settings/
+.factorypath
+.vscode/
+.idea/
+.sonarlint/
+*.iml
 
 # Build
 target/
 *.class
 *.log
+*.out
+
+# Generated docs / diagrams
 diagrams/
 test-diagram.png
 tools/generate_diagram_images.ps1
 tools/generate_ppt.py
 TimeSheet_Leave_Management_System_Presentation.pptx
+
 # Node
 node_modules/
+dist/
 
-# Env
+# Environment / secrets
 .env
+.env.*
+!.env.example
 Config-Server/k8s/secret.yml
 
 # Maven
@@ -29,3 +42,8 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+.m2/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -3,6 +3,13 @@ spring:
     name: timesheet-service
   config:
     import: optional:configserver:http://${app.config-server.username}:${app.config-server.password}@${app.config-server.host}:${app.config-server.port}
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+        retry:
+          enabled: false
 
 server:
   forward-headers-strategy: framework

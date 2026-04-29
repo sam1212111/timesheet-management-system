@@ -4,9 +4,7 @@ import com.tms.ts.dto.ApprovalCompletedEvent;
 import com.tms.ts.service.TimesheetService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.annotation.Exchange;
-import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.annotation.QueueBinding;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -23,11 +21,7 @@ public class ApprovalEventConsumer {
         this.timesheetService = timesheetService;
     }
 
-    @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "timesheet.approval.completed", durable = "true"),
-            exchange = @Exchange(value = "admin.exchange", type = "topic"),
-            key = "approval.completed"
-    ))
+    @RabbitListener(queues = "timesheet.approval.completed")
     public void handleApprovalCompleted(ApprovalCompletedEvent event) {
         if (!"TIMESHEET".equalsIgnoreCase(event.getTargetType())) {
             return;
@@ -51,6 +45,7 @@ public class ApprovalEventConsumer {
             }
         } catch (Exception e) {
             log.error("Failed to process approval for timesheet {}", event.getTargetId(), e);
+            throw new AmqpRejectAndDontRequeueException("Timesheet approval processing failed", e);
         }
     }
 }
