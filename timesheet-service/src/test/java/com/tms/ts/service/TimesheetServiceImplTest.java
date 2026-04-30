@@ -1,6 +1,9 @@
 package com.tms.ts.service;
 
 import com.tms.ts.client.AuthServiceClient;
+import com.tms.ts.client.LeaveServiceClient;
+import com.tms.ts.client.dto.HolidayClientResponse;
+import com.tms.ts.client.dto.LeaveRequestClientResponse;
 import com.tms.common.exception.UnauthorizedException;
 import com.tms.common.util.IdGeneratorUtil;
 import com.tms.ts.dto.TimesheetEntryRequest;
@@ -53,6 +56,9 @@ class TimesheetServiceImplTest {
     private AuthServiceClient authServiceClient;
 
     @Mock
+    private LeaveServiceClient leaveServiceClient;
+
+    @Mock
     private IdGeneratorUtil idGeneratorUtil;
 
     @Mock
@@ -95,6 +101,9 @@ class TimesheetServiceImplTest {
         addRequest.setWorkDate(today);
         addRequest.setHoursWorked(new BigDecimal("8.0"));
         addRequest.setTaskSummary("Did some work");
+
+        when(leaveServiceClient.getHolidays(anyString())).thenReturn(List.of());
+        when(leaveServiceClient.getMyLeaveRequests(anyString(), anyString())).thenReturn(List.of());
     }
 
     // ==================== ADD ENTRY TESTS ====================
@@ -316,11 +325,14 @@ class TimesheetServiceImplTest {
             when(timesheetRepository.findByEmployeeIdAndWeekStart(employeeId, weekStart))
                     .thenReturn(Optional.of(testTimesheet));
 
-            TimesheetValidationResponse response = timesheetService.validateTimesheet(weekStart, employeeId);
+            TimesheetValidationResponse response = timesheetService.validateTimesheet(weekStart, employeeId, authorization);
 
             assertFalse(response.isValid());
-            // Since there's 5 weekdays and user only logged 1 day, there should be 4 errors
-            assertEquals(4, response.getErrors().size());
+            long weekdaysValidated = java.time.temporal.ChronoUnit.DAYS.between(
+                    weekStart,
+                    (today.isBefore(weekStart.plusDays(4)) ? today : weekStart.plusDays(4)).plusDays(1)
+            );
+            assertEquals(Math.max(0, weekdaysValidated - 1), response.getErrors().size());
         }
 
         @Test

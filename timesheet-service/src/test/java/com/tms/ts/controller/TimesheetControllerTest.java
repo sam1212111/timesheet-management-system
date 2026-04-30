@@ -147,11 +147,12 @@ class TimesheetControllerTest {
         LocalDate requestedDate = today.with(java.time.DayOfWeek.THURSDAY);
         LocalDate weekStart = requestedDate.with(java.time.DayOfWeek.MONDAY);
 
-        when(timesheetService.validateTimesheet(weekStart, "USR-123"))
+        when(timesheetService.validateTimesheet(weekStart, "USR-123", "Bearer test-token"))
                 .thenReturn(validationResponse);
 
         mockMvc.perform(get("/api/v1/timesheets/weeks/" + requestedDate + "/validate")
-                        .header("X-User-Id", "USR-123"))
+                        .header("X-User-Id", "USR-123")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.totalWeeklyHours").value(40.0));
