@@ -8,6 +8,7 @@ import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
 import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
+import com.tms.as.dto.TeamMemberResponse;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
 import com.tms.as.entity.Role;
@@ -99,6 +100,15 @@ public class AuthController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ManagerOptionResponse>> getAssignableManagers(@RequestParam(required = false) String search) {
         return ResponseEntity.ok(authService.getAssignableManagers(search));
+    }
+
+    @GetMapping("/team/members")
+    @Operation(summary = "List team members for manager or admin", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(Authentication authentication,
+                                                                   @RequestParam(required = false) String managerId,
+                                                                   @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(authService.getTeamMembers(authentication.getName(), managerId, search));
     }
     
     @GetMapping("/users/{employeeId}/manager")

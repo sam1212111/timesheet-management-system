@@ -1,6 +1,7 @@
 package com.tms.ts.service;
 
 import com.tms.ts.dto.*;
+import com.tms.ts.entity.TimesheetStatus;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,8 +14,11 @@ public interface TimesheetService {
     void deleteEntry(String entryId, String employeeId);
 
     TimesheetResponse getTimesheet(LocalDate weekStart, String employeeId);
+    TimesheetResponse getTimesheetById(String id);
 
     List<TimesheetResponse> getAllTimesheets(String employeeId);
+
+    List<TeamTimesheetResponse> getTeamTimesheets(String authorization, String managerId, String search, TimesheetStatus status, LocalDate weekStart);
 
     TimesheetResponse submitTimesheet(TimesheetSubmitRequest request, String employeeId, String authorization);
 

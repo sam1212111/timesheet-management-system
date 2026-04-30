@@ -15,6 +15,7 @@ import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
 import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
+import com.tms.as.dto.TeamMemberResponse;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
 import com.tms.as.entity.Role;
@@ -262,6 +263,21 @@ public class AuthServiceImpl implements AuthService {
                 .toList();
     }
 
+    @Override
+    public List<TeamMemberResponse> getTeamMembers(String loggedInEmail, String managerId, String search) {
+        User loggedInUser = userRepository.findByEmail(loggedInEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
+
+        String effectiveManagerId = loggedInUser.getRole() == Role.ADMIN
+                ? normalizeSearch(managerId)
+                : loggedInUser.getId();
+
+        return userRepository.findTeamMembers(effectiveManagerId, normalizeSearch(search))
+                .stream()
+                .map(this::mapToTeamMember)
+                .toList();
+    }
+
     private long elapsedMillis(long startedAt) {
         return (System.nanoTime() - startedAt) / 1_000_000;
     }
@@ -300,6 +316,18 @@ public class AuthServiceImpl implements AuthService {
         response.setFullName(user.getFullName());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole());
+        return response;
+    }
+
+    private TeamMemberResponse mapToTeamMember(User user) {
+        TeamMemberResponse response = new TeamMemberResponse();
+        response.setId(user.getId());
+        response.setEmployeeCode(user.getEmployeeCode());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole());
+        response.setStatus(user.getStatus());
+        response.setManagerId(user.getManagerId());
         return response;
     }
 

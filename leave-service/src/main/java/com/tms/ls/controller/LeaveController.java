@@ -1,6 +1,7 @@
 package com.tms.ls.controller;
 
 import com.tms.ls.dto.LeaveBalanceResponse;
+import com.tms.ls.dto.LeaveBalanceAssignmentRequest;
 import com.tms.ls.dto.LeaveRequestDto;
 import com.tms.ls.dto.LeaveResponse;
 import com.tms.ls.dto.TeamCalendarResponse;
@@ -32,6 +33,22 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getBalances(employeeId));
     }
 
+    @GetMapping("/balances/{employeeId}")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<List<LeaveBalanceResponse>> getEmployeeBalances(
+            @PathVariable String employeeId,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestHeader("X-User-Id") String requesterId,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestHeader("X-User-Role") String requesterRole,
+            @io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestHeader("Authorization") String authorization) {
+        return ResponseEntity.ok(leaveService.getBalancesForEmployee(employeeId, requesterId, requesterRole, authorization));
+    }
+
+    @PostMapping("/balances/assign")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<LeaveBalanceResponse>> assignBalances(@Valid @RequestBody LeaveBalanceAssignmentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.assignBalances(request));
+    }
+
     @PostMapping("/requests")
     @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<LeaveResponse> requestLeave(@Valid @RequestBody LeaveRequestDto request,
@@ -44,6 +61,12 @@ public class LeaveController {
     @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<List<LeaveResponse>> getMyRequests(@io.swagger.v3.oas.annotations.Parameter(hidden = true) @RequestHeader("X-User-Id") String employeeId) {
         return ResponseEntity.ok(leaveService.getMyRequests(employeeId));
+    }
+
+    @GetMapping("/requests/{id}")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<LeaveResponse> getLeaveRequestById(@PathVariable String id) {
+        return ResponseEntity.ok(leaveService.getLeaveRequestById(id));
     }
     
     @PostMapping("/balances/initialize")

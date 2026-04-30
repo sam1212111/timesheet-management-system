@@ -9,6 +9,7 @@ import com.tms.as.dto.AuthResponse;
 import com.tms.as.dto.LoginRequest;
 import com.tms.as.dto.ManagerOptionResponse;
 import com.tms.as.dto.RegisterRequest;
+import com.tms.as.dto.TeamMemberResponse;
 import com.tms.as.dto.UpdateProfileRequest;
 import com.tms.as.dto.UserResponse;
 import com.tms.as.entity.Role;
@@ -51,6 +52,7 @@ class AuthControllerTest {
     private AdminUserListItemResponse adminUserListItemResponse;
     private AdminUserDetailResponse adminUserDetailResponse;
     private ManagerOptionResponse managerOptionResponse;
+    private TeamMemberResponse teamMemberResponse;
 
     @BeforeEach
     void setUp() {
@@ -100,6 +102,15 @@ class AuthControllerTest {
         managerOptionResponse.setFullName("Jane Manager");
         managerOptionResponse.setEmail("manager@example.com");
         managerOptionResponse.setRole(Role.MANAGER);
+
+        teamMemberResponse = new TeamMemberResponse();
+        teamMemberResponse.setId("USR-EMP001");
+        teamMemberResponse.setEmployeeCode("EMP-001");
+        teamMemberResponse.setFullName("Ravi Employee");
+        teamMemberResponse.setEmail("ravi@example.com");
+        teamMemberResponse.setRole(Role.EMPLOYEE);
+        teamMemberResponse.setStatus(Status.ACTIVE);
+        teamMemberResponse.setManagerId("USR-MGR001");
     }
 
     @Test
@@ -244,6 +255,21 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("USR-MGR001"))
                 .andExpect(jsonPath("$[0].role").value("MANAGER"));
+    }
+
+    @Test
+    @DisplayName("GET /team/members should return team members")
+    void getTeamMembers_Success() throws Exception {
+        when(authService.getTeamMembers("manager@example.com", null, "ravi"))
+                .thenReturn(List.of(teamMemberResponse));
+
+        mockMvc.perform(get("/api/v1/auth/team/members")
+                        .principal(new UsernamePasswordAuthenticationToken("manager@example.com", null))
+                        .param("search", "ravi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("USR-EMP001"))
+                .andExpect(jsonPath("$[0].fullName").value("Ravi Employee"))
+                .andExpect(jsonPath("$[0].managerId").value("USR-MGR001"));
     }
 
     @Test

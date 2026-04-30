@@ -3,6 +3,7 @@ package com.tms.admin.client;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.tms.admin.client.fallback.TimesheetFallback;
 
@@ -12,7 +13,8 @@ public interface TimesheetServiceClient {
     // Allows the Admin Service to synchronously fetch a timesheet definition
     // if the manager needs granular details.
     @GetMapping("/api/v1/timesheets/{id}")
-    Object getTimesheetById(@PathVariable("id") String id);
+    Object getTimesheetById(@PathVariable("id") String id,
+                            @RequestHeader("Authorization") String authorization);
 
     @org.springframework.web.bind.annotation.PatchMapping("/api/v1/timesheets/{id}/approve")
     void approveTimesheet(@PathVariable("id") String id, @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> comments);

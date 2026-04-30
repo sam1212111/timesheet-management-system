@@ -1,6 +1,7 @@
 package com.tms.ts.controller;
 
 import com.tms.ts.dto.*;
+import com.tms.ts.entity.TimesheetStatus;
 import com.tms.ts.service.TimesheetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -93,6 +94,25 @@ public class TimesheetController {
     public ResponseEntity<List<TimesheetResponse>> getAllTimesheets(
             @Parameter(hidden = true, name = "X-User-Id") @RequestHeader("X-User-Id") String employeeId) {
         return ResponseEntity.ok(timesheetService.getAllTimesheets(employeeId));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get timesheet by id for review")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<TimesheetResponse> getTimesheetById(@PathVariable("id") String id) {
+        return ResponseEntity.ok(timesheetService.getTimesheetById(id));
+    }
+
+    @GetMapping("/team")
+    @Operation(summary = "Get team timesheets for manager or admin")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<List<TeamTimesheetResponse>> getTeamTimesheets(
+            @Parameter(hidden = true, name = "Authorization") @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) String managerId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) TimesheetStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart) {
+        return ResponseEntity.ok(timesheetService.getTeamTimesheets(authorization, managerId, search, status, weekStart));
     }
 
     @PostMapping("/submit")

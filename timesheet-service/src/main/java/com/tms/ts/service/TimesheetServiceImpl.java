@@ -4,6 +4,7 @@ import com.tms.ts.client.AuthServiceClient;
 import com.tms.ts.client.LeaveServiceClient;
 import com.tms.ts.client.dto.HolidayClientResponse;
 import com.tms.ts.client.dto.LeaveRequestClientResponse;
+import com.tms.ts.client.dto.TeamMemberClientResponse;
 import com.tms.common.exception.ResourceNotFoundException;
 import com.tms.common.exception.UnauthorizedException;
 import com.tms.common.util.IdGeneratorUtil;
@@ -17,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TimesheetServiceImpl implements TimesheetService {
@@ -177,10 +180,44 @@ public class TimesheetServiceImpl implements TimesheetService {
     }
 
     @Override
+    public TimesheetResponse getTimesheetById(String id) {
+        Timesheet timesheet = timesheetRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found"));
+        return mapToTimesheetResponse(timesheet);
+    }
+
+    @Override
     public List<TimesheetResponse> getAllTimesheets(String employeeId) {
         List<Timesheet> timesheets = timesheetRepository.findByEmployeeId(employeeId);
         return timesheets.stream()
                 .map(this::mapToTimesheetResponse)
+                .toList();
+    }
+
+    @Override
+    public List<TeamTimesheetResponse> getTeamTimesheets(String authorization,
+                                                         String managerId,
+                                                         String search,
+                                                         TimesheetStatus status,
+                                                         LocalDate weekStart) {
+        List<TeamMemberClientResponse> teamMembers = authServiceClient.getTeamMembers(authorization, managerId, search);
+        if (teamMembers.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, TeamMemberClientResponse> teamMemberMap = new LinkedHashMap<>();
+        for (TeamMemberClientResponse member : teamMembers) {
+            teamMemberMap.put(member.getId(), member);
+        }
+
+        List<Timesheet> timesheets = timesheetRepository.findTeamTimesheets(
+                teamMemberMap.keySet().stream().toList(),
+                status,
+                weekStart
+        );
+
+        return timesheets.stream()
+                .map(timesheet -> mapToTeamTimesheetResponse(timesheet, teamMemberMap.get(timesheet.getEmployeeId())))
                 .toList();
     }
 
@@ -363,6 +400,34 @@ public class TimesheetServiceImpl implements TimesheetService {
                 .toList();
 
         response.setEntries(entries);
+        return response;
+    }
+
+    private TeamTimesheetResponse mapToTeamTimesheetResponse(Timesheet timesheet, TeamMemberClientResponse member) {
+        TeamTimesheetResponse response = new TeamTimesheetResponse();
+        response.setId(timesheet.getId());
+        response.setEmployeeId(timesheet.getEmployeeId());
+        response.setEmployeeCode(member != null ? member.getEmployeeCode() : null);
+        response.setEmployeeName(member != null ? member.getFullName() : null);
+        response.setManagerId(timesheet.getManagerId());
+        response.setWeekStart(timesheet.getWeekStart());
+        response.setStatus(timesheet.getStatus());
+        response.setComments(timesheet.getComments());
+        response.setRejectionReason(timesheet.getRejectionReason());
+        response.setSubmittedAt(timesheet.getSubmittedAt());
+        response.setApprovedAt(timesheet.getApprovedAt());
+        response.setUpdatedAt(timesheet.getUpdatedAt());
+        response.setEntryCount(timesheet.getEntries() != null ? timesheet.getEntries().size() : 0);
+
+        java.math.BigDecimal totalHours = java.math.BigDecimal.ZERO;
+        if (timesheet.getEntries() != null) {
+            for (TimesheetEntry entry : timesheet.getEntries()) {
+                if (entry.getHoursWorked() != null) {
+                    totalHours = totalHours.add(entry.getHoursWorked());
+                }
+            }
+        }
+        response.setTotalHours(totalHours);
         return response;
     }
 }

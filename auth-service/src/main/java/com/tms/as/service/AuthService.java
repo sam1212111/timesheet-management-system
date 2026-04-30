@@ -26,4 +26,6 @@ public interface AuthService {
     AdminUserDetailResponse getAdminUserById(String id);
 
     List<ManagerOptionResponse> getAssignableManagers(String search);
+
+    List<TeamMemberResponse> getTeamMembers(String loggedInEmail, String managerId, String search);
 }

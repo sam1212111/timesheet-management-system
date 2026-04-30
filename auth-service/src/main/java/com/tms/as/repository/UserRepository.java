@@ -53,4 +53,21 @@ public interface UserRepository extends JpaRepository<User, String> {
     List<User> findAssignableManagers(@Param("roles") Collection<Role> roles,
                                       @Param("status") Status status,
                                       @Param("search") String search);
+
+    @Query("""
+            select u from User u
+            where (
+                    (:managerId is null and u.managerId is not null)
+                    or u.managerId = :managerId
+                  )
+              and (
+                    :search is null
+                    or lower(u.fullName) like lower(concat('%', :search, '%'))
+                    or lower(u.email) like lower(concat('%', :search, '%'))
+                    or lower(u.employeeCode) like lower(concat('%', :search, '%'))
+              )
+            order by u.status asc, u.fullName asc
+            """)
+    List<User> findTeamMembers(@Param("managerId") String managerId,
+                               @Param("search") String search);
 }

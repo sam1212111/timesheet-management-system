@@ -1,5 +1,8 @@
 package com.tms.admin.service;
 
+import com.tms.admin.client.LeaveServiceClient;
+import com.tms.admin.client.TimesheetServiceClient;
+import com.tms.admin.dto.ApprovalDetailResponse;
 import com.tms.admin.dto.ApprovalTaskResponse;
 import com.tms.admin.entity.ApprovalStatus;
 import com.tms.admin.entity.ApprovalTask;
@@ -31,6 +34,12 @@ class ApprovalServiceImplTest {
     @Mock
     private ApprovalCompletionEventPublisher approvalCompletionEventPublisher;
 
+    @Mock
+    private LeaveServiceClient leaveServiceClient;
+
+    @Mock
+    private TimesheetServiceClient timesheetServiceClient;
+
     @InjectMocks
     private ApprovalServiceImpl service;
 
@@ -45,6 +54,20 @@ class ApprovalServiceImplTest {
 
         assertEquals(1, result.size());
         assertEquals("TASK-1", result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("getApprovalDetail should return task plus target detail")
+    void getApprovalDetail_ReturnsTaskAndTargetDetail() {
+        ApprovalTask task = buildTask();
+        when(taskRepository.findById("TASK-1")).thenReturn(Optional.of(task));
+        when(leaveServiceClient.getLeaveRequestById("LEAVE-1", "Bearer token"))
+                .thenReturn(java.util.Map.of("id", "LEAVE-1"));
+
+        ApprovalDetailResponse response = service.getApprovalDetail("TASK-1", "MGR-1", "Bearer token");
+
+        assertEquals("TASK-1", response.getTask().getId());
+        assertEquals("LEAVE-1", ((java.util.Map<?, ?>) response.getTargetDetail()).get("id"));
     }
 
     @Test

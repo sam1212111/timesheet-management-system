@@ -1,6 +1,7 @@
 package com.tms.admin.controller;
 
 import com.tms.admin.dto.ApprovalActionRequest;
+import com.tms.admin.dto.ApprovalDetailResponse;
 import com.tms.admin.dto.ApprovalTaskResponse;
 import com.tms.admin.service.ApprovalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,16 @@ public class AdminApprovalController {
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<List<ApprovalTaskResponse>> getPendingApprovals(@Parameter(hidden = true) @RequestHeader("X-User-Id") String employeeId) {
         return ResponseEntity.ok(approvalService.getPendingApprovals(employeeId));
+    }
+
+    @GetMapping("/{taskId}")
+    @Operation(summary = "Get approval detail", description = "Returns the approval task plus the underlying leave or timesheet record for richer review.")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<ApprovalDetailResponse> getApprovalDetail(
+            @PathVariable("taskId") String taskId,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") String employeeId,
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authorization) {
+        return ResponseEntity.ok(approvalService.getApprovalDetail(taskId, employeeId, authorization));
     }
 
     @PostMapping("/{taskId}/approve")

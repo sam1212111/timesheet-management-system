@@ -11,7 +11,7 @@ public class LeaveFallback implements LeaveServiceClient {
     private static final Logger log = LoggerFactory.getLogger(LeaveFallback.class);
 
     @Override
-    public Object getLeaveRequestById(String id) {
+    public Object getLeaveRequestById(String id, String authorization) {
         log.warn("Leave Service is unreachable for getLeaveRequestById fallback. RequestId: {}", id);
         return null; // Empty object on fallback
     }

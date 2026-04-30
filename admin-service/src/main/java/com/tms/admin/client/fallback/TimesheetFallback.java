@@ -11,7 +11,7 @@ public class TimesheetFallback implements TimesheetServiceClient {
     private static final Logger log = LoggerFactory.getLogger(TimesheetFallback.class);
 
     @Override
-    public Object getTimesheetById(String id) {
+    public Object getTimesheetById(String id, String authorization) {
         log.warn("Timesheet Service is unreachable for getTimesheetById fallback. TimesheetId: {}", id);
         return null;
     }

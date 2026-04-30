@@ -2,7 +2,10 @@ package com.tms.ls.service;
 
 import com.tms.common.exception.ResourceNotFoundException;
 import com.tms.ls.client.AuthServiceClient;
+import com.tms.ls.client.dto.TeamMemberClientResponse;
 import com.tms.ls.dto.HolidayResponse;
+import com.tms.ls.dto.LeaveBalanceAssignmentItem;
+import com.tms.ls.dto.LeaveBalanceAssignmentRequest;
 import com.tms.ls.dto.LeaveRequestDto;
 import com.tms.ls.dto.LeaveRequestedEvent;
 import com.tms.ls.dto.LeaveResponse;
@@ -362,6 +365,121 @@ class LeaveServiceImplTest {
     }
 
     @Test
+    @DisplayName("getBalancesForEmployee should allow admin to view another employee balance")
+    void getBalancesForEmployee_AdminCanViewAnotherEmployee() {
+        LeaveBalance balance = new LeaveBalance("EMP-88", LeaveType.CASUAL, new BigDecimal("12"));
+        balance.setId("BAL-88");
+
+        when(balanceRepository.findByEmployeeId("EMP-88")).thenReturn(List.of(balance));
+
+        var result = service.getBalancesForEmployee("EMP-88", "ADM-1", "ADMIN", "Bearer token");
+
+        assertEquals(1, result.size());
+        assertEquals("BAL-88", result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("getBalancesForEmployee should allow manager to view a direct report balance")
+    void getBalancesForEmployee_ManagerCanViewTeamMember() {
+        LeaveBalance balance = new LeaveBalance("EMP-89", LeaveType.SICK, new BigDecimal("9"));
+        balance.setId("BAL-89");
+
+        TeamMemberClientResponse teamMember = new TeamMemberClientResponse();
+        teamMember.setId("EMP-89");
+        teamMember.setManagerId("MGR-89");
+
+        when(authServiceClient.getTeamMembers("Bearer token", null, null)).thenReturn(List.of(teamMember));
+        when(balanceRepository.findByEmployeeId("EMP-89")).thenReturn(List.of(balance));
+
+        var result = service.getBalancesForEmployee("EMP-89", "MGR-89", "MANAGER", "Bearer token");
+
+        assertEquals(1, result.size());
+        assertEquals("BAL-89", result.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("getBalancesForEmployee should reject manager access outside their team")
+    void getBalancesForEmployee_ManagerCannotViewOutsideTeam() {
+        TeamMemberClientResponse teamMember = new TeamMemberClientResponse();
+        teamMember.setId("EMP-100");
+
+        when(authServiceClient.getTeamMembers("Bearer token", null, null)).thenReturn(List.of(teamMember));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getBalancesForEmployee("EMP-101", "MGR-90", "MANAGER", "Bearer token"));
+
+        assertEquals("You can only view leave balances for employees in your team", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("assignBalances should create selected balances using policy defaults and overrides")
+    void assignBalances_UsesSelectedPolicies() {
+        LeavePolicy casual = new LeavePolicy();
+        casual.setLeaveType(LeaveType.CASUAL);
+        casual.setDaysAllowed(new BigDecimal("12"));
+        casual.setActive(true);
+
+        LeavePolicy sick = new LeavePolicy();
+        sick.setLeaveType(LeaveType.SICK);
+        sick.setDaysAllowed(new BigDecimal("8"));
+        sick.setActive(true);
+
+        LeaveBalanceAssignmentItem casualAssignment = new LeaveBalanceAssignmentItem();
+        casualAssignment.setLeaveType(LeaveType.CASUAL);
+
+        LeaveBalanceAssignmentItem sickAssignment = new LeaveBalanceAssignmentItem();
+        sickAssignment.setLeaveType(LeaveType.SICK);
+        sickAssignment.setTotalAllowed(new BigDecimal("10"));
+
+        LeaveBalanceAssignmentRequest request = new LeaveBalanceAssignmentRequest();
+        request.setEmployeeId("EMP-ASSIGN");
+        request.setAssignments(List.of(casualAssignment, sickAssignment));
+
+        when(leavePolicyRepository.findByLeaveType(LeaveType.CASUAL)).thenReturn(Optional.of(casual));
+        when(leavePolicyRepository.findByLeaveType(LeaveType.SICK)).thenReturn(Optional.of(sick));
+        when(balanceRepository.findByEmployeeIdAndLeaveType("EMP-ASSIGN", LeaveType.CASUAL)).thenReturn(Optional.empty());
+        when(balanceRepository.findByEmployeeIdAndLeaveType("EMP-ASSIGN", LeaveType.SICK)).thenReturn(Optional.empty());
+        when(balanceRepository.save(any(LeaveBalance.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.assignBalances(request);
+
+        assertEquals(2, result.size());
+        assertEquals(new BigDecimal("12"), result.get(0).getTotalAllowed());
+        assertEquals(new BigDecimal("10"), result.get(1).getTotalAllowed());
+    }
+
+    @Test
+    @DisplayName("assignBalances should reject totals lower than used plus pending")
+    void assignBalances_RejectsUnsafeLowering() {
+        LeavePolicy casual = new LeavePolicy();
+        casual.setLeaveType(LeaveType.CASUAL);
+        casual.setDaysAllowed(new BigDecimal("12"));
+        casual.setActive(true);
+
+        LeaveBalance existing = new LeaveBalance("EMP-LOWER", LeaveType.CASUAL, new BigDecimal("12"));
+        existing.setUsed(new BigDecimal("5"));
+        existing.setPending(new BigDecimal("2"));
+
+        LeaveBalanceAssignmentItem assignment = new LeaveBalanceAssignmentItem();
+        assignment.setLeaveType(LeaveType.CASUAL);
+        assignment.setTotalAllowed(new BigDecimal("6"));
+
+        LeaveBalanceAssignmentRequest request = new LeaveBalanceAssignmentRequest();
+        request.setEmployeeId("EMP-LOWER");
+        request.setAssignments(List.of(assignment));
+
+        when(leavePolicyRepository.findByLeaveType(LeaveType.CASUAL)).thenReturn(Optional.of(casual));
+        when(balanceRepository.findByEmployeeIdAndLeaveType("EMP-LOWER", LeaveType.CASUAL)).thenReturn(Optional.of(existing));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.assignBalances(request));
+
+        assertEquals("Assigned total for CASUAL cannot be less than used plus pending balance", exception.getMessage());
+    }
+
+    @Test
     @DisplayName("getMyRequests should map leave requests in descending order")
     void getMyRequests_ReturnsMappedRequests() {
         LeaveRequest request = new LeaveRequest();
@@ -380,6 +498,23 @@ class LeaveServiceImplTest {
         assertEquals(1, result.size());
         assertEquals("REQ-8", result.get(0).getId());
         assertEquals(LeaveStatus.APPROVED, result.get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("getLeaveRequestById should return a mapped request")
+    void getLeaveRequestById_ReturnsMappedRequest() {
+        LeaveRequest request = new LeaveRequest();
+        request.setId("REQ-DETAIL");
+        request.setEmployeeId("EMP-DETAIL");
+        request.setLeaveType(LeaveType.SICK);
+        request.setStatus(LeaveStatus.SUBMITTED);
+
+        when(requestRepository.findById("REQ-DETAIL")).thenReturn(Optional.of(request));
+
+        var result = service.getLeaveRequestById("REQ-DETAIL");
+
+        assertEquals("REQ-DETAIL", result.getId());
+        assertEquals(LeaveStatus.SUBMITTED, result.getStatus());
     }
 
     @Test

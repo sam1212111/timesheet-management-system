@@ -490,5 +490,44 @@ class AuthServiceImplTest {
             assertEquals("USR-MGR001", response.get(0).getId());
             assertEquals(Role.MANAGER, response.get(0).getRole());
         }
+
+        @Test
+        @DisplayName("Should return direct reports for manager")
+        void getTeamMembers_ManagerScope() {
+            User manager = new User();
+            manager.setId("USR-MGR001");
+            manager.setEmail("manager@example.com");
+            manager.setRole(Role.MANAGER);
+
+            testUser.setManagerId("USR-MGR001");
+            when(userRepository.findByEmail("manager@example.com")).thenReturn(Optional.of(manager));
+            when(userRepository.findTeamMembers("USR-MGR001", "john")).thenReturn(List.of(testUser));
+
+            List<TeamMemberResponse> response = authService.getTeamMembers("manager@example.com", null, "john");
+
+            assertEquals(1, response.size());
+            assertEquals("USR-ABC12345", response.get(0).getId());
+            assertEquals("John Doe", response.get(0).getFullName());
+            verify(userRepository).findTeamMembers("USR-MGR001", "john");
+        }
+
+        @Test
+        @DisplayName("Should allow admin to query a specific manager team")
+        void getTeamMembers_AdminScope() {
+            User admin = new User();
+            admin.setId("USR-ADMIN001");
+            admin.setEmail("admin@example.com");
+            admin.setRole(Role.ADMIN);
+
+            testUser.setManagerId("USR-MGR001");
+            when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));
+            when(userRepository.findTeamMembers("USR-MGR001", null)).thenReturn(List.of(testUser));
+
+            List<TeamMemberResponse> response = authService.getTeamMembers("admin@example.com", "USR-MGR001", "   ");
+
+            assertEquals(1, response.size());
+            assertEquals("USR-ABC12345", response.get(0).getId());
+            verify(userRepository).findTeamMembers("USR-MGR001", null);
+        }
     }
 }

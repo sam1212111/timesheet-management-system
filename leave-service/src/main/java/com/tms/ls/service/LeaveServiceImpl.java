@@ -2,6 +2,9 @@ package com.tms.ls.service;
 
 import com.tms.common.exception.ResourceNotFoundException;
 import com.tms.ls.client.AuthServiceClient;
+import com.tms.ls.client.dto.TeamMemberClientResponse;
+import com.tms.ls.dto.LeaveBalanceAssignmentItem;
+import com.tms.ls.dto.LeaveBalanceAssignmentRequest;
 import com.tms.ls.dto.LeaveBalanceResponse;
 import com.tms.ls.dto.LeaveRequestDto;
 import com.tms.ls.dto.LeaveRequestedEvent;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -69,6 +73,61 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<LeaveBalanceResponse> getBalancesForEmployee(String employeeId, String requesterId, String requesterRole, String authorization) {
+        if (employeeId.equals(requesterId)) {
+            return getBalances(employeeId);
+        }
+
+        if ("ADMIN".equalsIgnoreCase(requesterRole)) {
+            return getBalances(employeeId);
+        }
+
+        if (!"MANAGER".equalsIgnoreCase(requesterRole)) {
+            throw new IllegalArgumentException("You are not allowed to view another employee's leave balances");
+        }
+
+        List<TeamMemberClientResponse> teamMembers = authServiceClient.getTeamMembers(authorization, null, null);
+        boolean inScope = teamMembers.stream().anyMatch(member -> employeeId.equals(member.getId()));
+        if (!inScope) {
+            throw new IllegalArgumentException("You can only view leave balances for employees in your team");
+        }
+
+        return getBalances(employeeId);
+    }
+
+    @Override
+    @Transactional
+    public List<LeaveBalanceResponse> assignBalances(LeaveBalanceAssignmentRequest request) {
+        List<LeaveBalanceResponse> responses = new ArrayList<>();
+
+        for (LeaveBalanceAssignmentItem assignment : request.getAssignments()) {
+            LeavePolicy policy = leavePolicyRepository.findByLeaveType(assignment.getLeaveType())
+                    .filter(LeavePolicy::isActive)
+                    .orElseThrow(() -> new IllegalArgumentException("No active leave policy found for type: " + assignment.getLeaveType()));
+
+            BigDecimal targetTotal = assignment.getTotalAllowed() != null
+                    ? assignment.getTotalAllowed()
+                    : policy.getDaysAllowed();
+
+            LeaveBalance balance = balanceRepository.findByEmployeeIdAndLeaveType(request.getEmployeeId(), assignment.getLeaveType())
+                    .orElseGet(() -> new LeaveBalance(request.getEmployeeId(), assignment.getLeaveType(), targetTotal));
+
+            BigDecimal minimumAllowed = balance.getUsed().add(balance.getPending());
+            if (targetTotal.compareTo(minimumAllowed) < 0) {
+                throw new IllegalArgumentException(
+                        "Assigned total for " + assignment.getLeaveType() + " cannot be less than used plus pending balance"
+                );
+            }
+
+            balance.setTotalAllowed(targetTotal);
+            responses.add(mapToResponse(balanceRepository.save(balance)));
+        }
+
+        return responses;
+    }
+
+    @Override
     @Transactional
     public void initializeBalances(String employeeId) {
         List<LeaveBalance> existing = balanceRepository.findByEmployeeId(employeeId);
@@ -93,6 +152,14 @@ public class LeaveServiceImpl implements LeaveService {
     public List<LeaveResponse> getMyRequests(String employeeId) {
         return requestRepository.findByEmployeeIdOrderByStartDateDesc(employeeId)
                 .stream().map(this::mapReqToResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LeaveResponse getLeaveRequestById(String id) {
+        LeaveRequest request = requestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(LEAVE_REQUEST_NOT_FOUND));
+        return mapReqToResponse(request);
     }
 
     @Override

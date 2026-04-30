@@ -2,6 +2,7 @@ package com.tms.admin.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tms.admin.dto.ApprovalActionRequest;
+import com.tms.admin.dto.ApprovalDetailResponse;
 import com.tms.admin.dto.ApprovalTaskResponse;
 import com.tms.admin.entity.ApprovalStatus;
 import com.tms.admin.entity.TargetType;
@@ -54,6 +55,23 @@ class AdminApprovalControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("APP-001"))
                 .andExpect(jsonPath("$[0].status").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("GET /{taskId} should return approval detail")
+    void getApprovalDetail_Success() throws Exception {
+        ApprovalDetailResponse detail = new ApprovalDetailResponse();
+        detail.setTask(buildTaskResponse());
+        detail.setTargetDetail(java.util.Map.of("id", "LEAVE-001"));
+
+        when(approvalService.getApprovalDetail("APP-001", "MGR-001", "Bearer token")).thenReturn(detail);
+
+        mockMvc.perform(get("/api/v1/admin/approvals/APP-001")
+                        .header("X-User-Id", "MGR-001")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.task.id").value("APP-001"))
+                .andExpect(jsonPath("$.targetDetail.id").value("LEAVE-001"));
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.tms.ls.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tms.ls.dto.LeaveBalanceAssignmentItem;
+import com.tms.ls.dto.LeaveBalanceAssignmentRequest;
 import com.tms.ls.dto.LeaveBalanceResponse;
 import com.tms.ls.dto.LeaveRequestDto;
 import com.tms.ls.dto.LeaveResponse;
@@ -74,6 +76,56 @@ class LeaveControllerTest {
     }
 
     @Test
+    @DisplayName("GET /balances/{employeeId} should return selected employee balances for manager or admin")
+    void getEmployeeBalances_Success() throws Exception {
+        LeaveBalanceResponse balance = new LeaveBalanceResponse();
+        balance.setId("LB-200");
+        balance.setEmployeeId("EMP-200");
+        balance.setLeaveType(LeaveType.SICK);
+        balance.setTotalAllowed(new BigDecimal("10"));
+        balance.setUsed(new BigDecimal("3"));
+        balance.setPending(BigDecimal.ZERO);
+
+        when(leaveService.getBalancesForEmployee("EMP-200", "MGR-001", "MANAGER", "Bearer token"))
+                .thenReturn(List.of(balance));
+
+        mockMvc.perform(get("/api/v1/leave/balances/EMP-200")
+                        .header("X-User-Id", "MGR-001")
+                        .header("X-User-Role", "MANAGER")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].employeeId").value("EMP-200"))
+                .andExpect(jsonPath("$[0].leaveType").value("SICK"));
+    }
+
+    @Test
+    @DisplayName("POST /balances/assign should assign selected leave balances")
+    void assignBalances_Success() throws Exception {
+        LeaveBalanceAssignmentItem assignment = new LeaveBalanceAssignmentItem();
+        assignment.setLeaveType(LeaveType.CASUAL);
+        assignment.setTotalAllowed(new BigDecimal("15"));
+
+        LeaveBalanceAssignmentRequest request = new LeaveBalanceAssignmentRequest();
+        request.setEmployeeId("EMP-300");
+        request.setAssignments(List.of(assignment));
+
+        LeaveBalanceResponse response = new LeaveBalanceResponse();
+        response.setId("LB-300");
+        response.setEmployeeId("EMP-300");
+        response.setLeaveType(LeaveType.CASUAL);
+        response.setTotalAllowed(new BigDecimal("15"));
+
+        when(leaveService.assignBalances(any(LeaveBalanceAssignmentRequest.class))).thenReturn(List.of(response));
+
+        mockMvc.perform(post("/api/v1/leave/balances/assign")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$[0].employeeId").value("EMP-300"))
+                .andExpect(jsonPath("$[0].totalAllowed").value(15));
+    }
+
+    @Test
     @DisplayName("POST /requests should create a leave request")
     void requestLeave_Success() throws Exception {
         LeaveRequestDto request = new LeaveRequestDto();
@@ -117,6 +169,23 @@ class LeaveControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("LR-002"))
                 .andExpect(jsonPath("$[0].status").value("APPROVED"));
+    }
+
+    @Test
+    @DisplayName("GET /requests/{id} should return a selected leave request")
+    void getLeaveRequestById_Success() throws Exception {
+        LeaveResponse response = new LeaveResponse();
+        response.setId("LR-010");
+        response.setEmployeeId("EMP-001");
+        response.setLeaveType(LeaveType.CASUAL);
+        response.setStatus(LeaveStatus.SUBMITTED);
+
+        when(leaveService.getLeaveRequestById("LR-010")).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/leave/requests/LR-010"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("LR-010"))
+                .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
 
     @Test
