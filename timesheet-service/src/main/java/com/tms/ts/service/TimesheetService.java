@@ -18,7 +18,7 @@ public interface TimesheetService {
 
     TimesheetResponse submitTimesheet(TimesheetSubmitRequest request, String employeeId, String authorization);
 
-    TimesheetValidationResponse validateTimesheet(LocalDate weekStart, String employeeId);
+    TimesheetValidationResponse validateTimesheet(LocalDate weekStart, String employeeId, String authorization);
 
     void approveTimesheet(String id, java.util.Map<String, String> comments);
 
