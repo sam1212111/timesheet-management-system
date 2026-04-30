@@ -81,9 +81,10 @@ public class TimesheetController {
     public ResponseEntity<TimesheetValidationResponse> validateTimesheet(
             @Parameter(name = "date", description = "Any date within the week to validate", example = "2026-03-30")
             @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @Parameter(hidden = true, name = "X-User-Id") @RequestHeader("X-User-Id") String employeeId) {
+            @Parameter(hidden = true, name = "X-User-Id") @RequestHeader("X-User-Id") String employeeId,
+            @Parameter(hidden = true, name = "Authorization") @RequestHeader("Authorization") String authorization) {
         LocalDate weekStart = date.with(DayOfWeek.MONDAY);
-        return ResponseEntity.ok(timesheetService.validateTimesheet(weekStart, employeeId));
+        return ResponseEntity.ok(timesheetService.validateTimesheet(weekStart, employeeId, authorization));
     }
 
     @GetMapping("/all")

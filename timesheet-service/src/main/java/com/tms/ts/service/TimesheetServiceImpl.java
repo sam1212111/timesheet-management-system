@@ -1,6 +1,9 @@
 package com.tms.ts.service;
 
 import com.tms.ts.client.AuthServiceClient;
+import com.tms.ts.client.LeaveServiceClient;
+import com.tms.ts.client.dto.HolidayClientResponse;
+import com.tms.ts.client.dto.LeaveRequestClientResponse;
 import com.tms.common.exception.ResourceNotFoundException;
 import com.tms.common.exception.UnauthorizedException;
 import com.tms.common.util.IdGeneratorUtil;
@@ -25,6 +28,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final TimesheetEntryRepository timesheetEntryRepository;
     private final ProjectRepository projectRepository;
     private final AuthServiceClient authServiceClient;
+    private final LeaveServiceClient leaveServiceClient;
     private final IdGeneratorUtil idGeneratorUtil;
     private final TimesheetSubmissionEventPublisher timesheetSubmissionEventPublisher;
     private static final java.math.BigDecimal MAX_DAILY_HOURS = new java.math.BigDecimal("24.0");
@@ -33,12 +37,14 @@ public class TimesheetServiceImpl implements TimesheetService {
                                  TimesheetEntryRepository timesheetEntryRepository,
                                  ProjectRepository projectRepository,
                                  AuthServiceClient authServiceClient,
+                                 LeaveServiceClient leaveServiceClient,
                                  IdGeneratorUtil idGeneratorUtil,
                                  TimesheetSubmissionEventPublisher timesheetSubmissionEventPublisher) {
         this.timesheetRepository = timesheetRepository;
         this.timesheetEntryRepository = timesheetEntryRepository;
         this.projectRepository = projectRepository;
         this.authServiceClient = authServiceClient;
+        this.leaveServiceClient = leaveServiceClient;
         this.idGeneratorUtil = idGeneratorUtil;
         this.timesheetSubmissionEventPublisher = timesheetSubmissionEventPublisher;
     }
@@ -112,6 +118,11 @@ public class TimesheetServiceImpl implements TimesheetService {
         }
 
         validateWorkDate(request.getWorkDate());
+
+        LocalDate requestedWeekStart = request.getWorkDate().with(DayOfWeek.MONDAY);
+        if (!requestedWeekStart.equals(entry.getTimesheet().getWeekStart())) {
+            throw new UnauthorizedException("Cannot move an entry into a different week. Create it in the correct week instead.");
+        }
 
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -190,7 +201,7 @@ public class TimesheetServiceImpl implements TimesheetService {
             throw new UnauthorizedException("Cannot submit an empty timesheet");
         }
 
-        TimesheetValidationResponse validation = validateTimesheet(request.getWeekStart(), employeeId);
+        TimesheetValidationResponse validation = validateTimesheet(request.getWeekStart(), employeeId, authorization);
         if (!validation.isValid()) {
             throw new UnauthorizedException("Cannot submit timesheet: " + String.join(", ", validation.getErrors()));
         }
@@ -206,7 +217,7 @@ public class TimesheetServiceImpl implements TimesheetService {
 
         Timesheet savedTimesheet = timesheetRepository.save(timesheet);
 
-        // approverId comes from the manager set on the employee — passed through so
+        // approverId comes from the manager set on the employee Ã¢â‚¬â€ passed through so
         // admin-service can create the ApprovalTask with the right approver.
 
         TimesheetSubmittedEvent event = new TimesheetSubmittedEvent(
@@ -247,7 +258,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     }
 
     @Override
-    public TimesheetValidationResponse validateTimesheet(LocalDate weekStart, String employeeId) {
+    public TimesheetValidationResponse validateTimesheet(LocalDate weekStart, String employeeId, String authorization) {
         Timesheet timesheet = timesheetRepository
                 .findByEmployeeIdAndWeekStart(employeeId, weekStart)
                 .orElseThrow(() -> new ResourceNotFoundException(TIMESHEET_NOT_FOUND_FOR_WEEK));
@@ -255,12 +266,34 @@ public class TimesheetServiceImpl implements TimesheetService {
         List<TimesheetEntry> entries = timesheet.getEntries();
         java.util.List<String> errors = new java.util.ArrayList<>();
         java.math.BigDecimal totalHours = java.math.BigDecimal.ZERO;
+        List<HolidayClientResponse> holidays = leaveServiceClient.getHolidays(authorization);
+        List<LeaveRequestClientResponse> approvedLeaveRequests = leaveServiceClient.getMyLeaveRequests(employeeId, authorization)
+                .stream()
+                .filter(leave -> "APPROVED".equalsIgnoreCase(leave.getStatus()))
+                .toList();
 
-        for (int i = 0; i < 5; i++) { // Monday to Friday (0 to 4 days added to weekStart)
-            LocalDate workday = weekStart.plusDays(i);
-            boolean hasEntry = entries.stream().anyMatch(e -> e.getWorkDate().equals(workday));
-            if (!hasEntry) {
-                errors.add("Missing entries for " + workday.getDayOfWeek().toString() + " (" + workday + ")");
+        LocalDate today = LocalDate.now();
+        LocalDate weekEnd = weekStart.plusDays(4);
+        LocalDate validationEnd = today.isBefore(weekEnd) ? today : weekEnd;
+
+        if (!validationEnd.isBefore(weekStart)) {
+            for (LocalDate workday = weekStart; !workday.isAfter(validationEnd); workday = workday.plusDays(1)) {
+                LocalDate currentWorkday = workday;
+                boolean isHoliday = holidays.stream().anyMatch(holiday -> currentWorkday.equals(holiday.getDate()));
+                boolean isApprovedLeaveDay = approvedLeaveRequests.stream().anyMatch(leave ->
+                        leave.getStartDate() != null
+                                && leave.getEndDate() != null
+                                && !currentWorkday.isBefore(leave.getStartDate())
+                                && !currentWorkday.isAfter(leave.getEndDate()));
+
+                if (isHoliday || isApprovedLeaveDay) {
+                    continue;
+                }
+
+                boolean hasEntry = entries.stream().anyMatch(e -> e.getWorkDate().equals(currentWorkday));
+                if (!hasEntry) {
+                    errors.add("Missing entries for " + currentWorkday.getDayOfWeek().toString() + " (" + currentWorkday + ")");
+                }
             }
         }
 
